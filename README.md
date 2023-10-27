@@ -1,4 +1,3 @@
-# Node Editor
+# The Node Editor
 
 Building a node editor from group up.
-

@@ -12,46 +12,52 @@ let offsetX = ref(0);
 let offsetY = ref(0);
 
 interface Node {
-  id : Number;
-  x : number;
+  id: Number;
+  x: number;
   y: number;
   width: number;
   height: number;
   fill: string;
   stroke: string;
   strokeWidth: number;
-  borderRadius : number;
+  borderRadius: number;
   draggable: boolean;
-  socketRadius : number;
+  socketRadius: number;
   socketColor: string;
   inputs: number;
   outputs: number;
   unit: number;
+  inputSockets: [];
+  outputSockets: [];
 }
 
 const DEFAULT_STROKE = "gray";
 const SELECTED_STROKE = "yellow";
 
-const node : Ref<Node> = reactive({
+const node: Ref<Node> = reactive({
   id: 1,
-  x : 50,
-  y : 50,
+  x: 50,
+  y: 50,
   width: 200,
   height: 200,
   unit: 50,
-  fill : '#4B4B4B',
+  fill: '#4b4b4b',
   stroke: 'gray',
-  strokeWidth: 5, 
-  borderRadius : 10,
+  strokeWidth: 5,
+  borderRadius: 10,
   draggable: true,
   socketRadius: 10,
   socketColor: "gray",
-  inputs : 2,
-  outputs : 5,
-  socketSpacing: 50
+  socketColorIn: "#ad89b5",
+  socketColorOut: "#f7aa69",
+  inputs: 2,
+  outputs: 5,
+  socketSpacing: 50,
+  inputSockets: [],
+  outputSockets: [],
 });
 
-const draggedNode : Ref<number> = ref(null);
+const draggedNode: Ref<number> = ref(null);
 
 const setCanvasSize = () => {
   canvas.value.width = document.body.clientWidth;
@@ -62,13 +68,16 @@ const initCanvas = () => {
   setCanvasSize();
 
   ctx.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
-  ctx.value.fillStyle = "#24232C";
+  ctx.value.fillStyle = "#24232c";
   ctx.value.fillRect(0, 0, canvas.value.width, canvas.value.height);
 }
 
 const drawNode = () => {
-  node.height = node.unit * (node.outputs + 1);
+  // set the height dynamically based on how many sockets
+  const maxSocketsNum = Math.max(node.outputs, node.inputs);
+  node.height = node.unit * (maxSocketsNum + 1);
 
+  // draw the node body
   ctx.value.fillStyle = node.fill;
   ctx.value.strokeStyle = node.stroke;
   ctx.value.lineWidth = node.strokeWidth;
@@ -76,54 +85,76 @@ const drawNode = () => {
   ctx.value.stroke();
   ctx.value.fill();
 
-  const inputSockets = [];
-  const outputSockets = [];
-
   // draw inputs
-  for(let i = 1; i <= node.inputs; i++) {
+  for (let i = 1; i <= node.inputs; i++) {
     const x = node.x;
     const y = node.y + (i * node.socketSpacing);
 
     ctx.value.beginPath();
     ctx.value.arc(x, y, node.socketRadius, 0, 2 * Math.PI);
-    ctx.value.fillStyle = node.socketColor;
+    ctx.value.fillStyle = node.socketColorIn;
     ctx.value.fill();
-    ctx.value.strokeStyle = "white";
+    ctx.value.strokeStyle = "#24232c";
     ctx.value.lineWidth = 2;
     ctx.value.stroke();
     ctx.value.closePath();
 
-    inputSockets.push({
+    ctx.value.lineWidth = 50;
+    ctx.value.fillStyle = "white";
+    ctx.value.fillText("Hello text", x + node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
+
+    node.inputSockets[i-1] = {
       x,
       y,
-    })
+    };
   }
 
   // draw outputs
-  for(let i = 1; i <= node.outputs; i++) {
+  for (let i = 1; i <= node.outputs; i++) {
     const x = node.x + node.width;
     const y = node.y + (i * node.socketSpacing);
 
     ctx.value.beginPath();
     ctx.value.arc(x, y, node.socketRadius, 0, 2 * Math.PI);
-    ctx.value.fillStyle = node.socketColor;
+    ctx.value.fillStyle = node.socketColorOut;
     ctx.value.fill();
-    ctx.value.strokeStyle = "white";
+    ctx.value.strokeStyle = "#24232c";
     ctx.value.lineWidth = 2;
     ctx.value.stroke();
     ctx.value.closePath();
 
-    outputSockets.push({
+    node.outputSockets[i-1] = {
       x,
       y,
-    })
+    };
   }
 };
 
+const drawConnections = () => {
+  const sourceX = 20;
+  const sourceY = 20;
+  const targetX = node.inputSockets[0].x;
+  const targetY = node.inputSockets[0].y;
+
+  // control points
+  const cp1X = sourceX + (targetX - sourceX) * (5/10);
+  const cp2X = sourceX + (targetX - sourceX) * (5/10);
+  const cp1Y = sourceY;
+  const cp2Y = targetY;
+
+  ctx.value.beginPath();
+  ctx.value.moveTo(sourceX, sourceY);
+  ctx.value.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, targetX, targetY);
+
+  ctx.value.lineWidth = 3;
+  ctx.value.strokeStyle = "white";
+  ctx.value.stroke();
+}
 
 const repaintEditor = () => {
   initCanvas();
   drawNode();
+  drawConnections();
 }
 
 const activateNode = () => {
@@ -142,7 +173,7 @@ const deactiviateNode = () => {
  * @param x
  * @param y
  */
-const isInsideNode = (x : number, y : number) => {
+const isInsideNode = (x: number, y: number) => {
   return (
       x >= node.x &&
       x <= node.x + node.width &&
@@ -172,7 +203,6 @@ const onMouseMove = (event) => {
   if (isDragging.value) {
     node.x = event.offsetX - offsetX.value;
     node.y = event.offsetY - offsetY.value;
-
     repaintEditor()
   }
 };
@@ -210,8 +240,7 @@ const unregisterMouseEvents = () => {
 
 onMounted(() => {
   ctx.value = canvas.value?.getContext('2d');
-  initCanvas();
-  drawNode();
+  repaintEditor();
   registerMouseEvents();
 })
 
@@ -225,8 +254,23 @@ onBeforeUnmount(() => {
 <template>
   <div class="editor">
     <canvas ref="canvas" id="canvas"></canvas>
+
+    <div class="debugging">
+      <pre>
+        {{node}}
+      </pre>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.debugging{
+  position: absolute;
+  top: 0;
+  right : 0;
+  font-size: 20px;
+  color: white;
+  overflow: scroll;
+  height: 100vh;
+}
 </style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import {onBeforeUnmount, onMounted, reactive, Ref, ref} from "vue";
+import type {ReactiveVariable} from "vue/macros";
 
 const canvas = ref<HTMLCanvasElement>();
 const ctx = ref<CanvasRenderingContext2D>();
@@ -12,11 +13,12 @@ let offsetX = ref(0);
 let offsetY = ref(0);
 
 interface Node {
-  id: Number;
+  id: number;
   x: number;
   y: number;
   width: number;
   height: number;
+  unit: number;
   fill: string;
   stroke: string;
   strokeWidth: number;
@@ -24,17 +26,19 @@ interface Node {
   draggable: boolean;
   socketRadius: number;
   socketColor: string;
+  socketColorIn: string;
+  socketColorOut: string;
   inputs: number;
   outputs: number;
-  unit: number;
-  inputSockets: [];
-  outputSockets: [];
+  socketSpacing: number;
+  inputSockets: any[]; // TODO: Socket[]
+  outputSockets: any[]; // TODO: Socket[]
 }
 
 const DEFAULT_STROKE = "gray";
 const SELECTED_STROKE = "yellow";
 
-const node: Ref<Node> = reactive({
+const node: ReactiveVariable<Node> = reactive({
   id: 1,
   x: 50,
   y: 50,

@@ -2,8 +2,8 @@
 
 import {onBeforeUnmount, onMounted, reactive, ref} from "vue";
 import type {ReactiveVariable} from "vue/macros";
-import {NodeObject} from "@/node";
-import {SocketObject} from "@/socket";
+import {NodeObject, isInsideNode} from "@/node";
+import {SocketObject, isInsideSocket} from "@/socket";
 
 const canvas = ref<HTMLCanvasElement>();
 const ctx = ref<CanvasRenderingContext2D>();
@@ -29,11 +29,11 @@ const node1: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   y: 285,
   name: "Sum",
   inputSockets: [
-    new SocketObject({name: "x", label: "x"}),
-    new SocketObject({name: "y", label: "y"}),
+    new SocketObject({name: "x", label: "x", node: this}),
+    new SocketObject({name: "y", label: "y", node: this}),
   ],
   outputSockets: [
-    new SocketObject({name: "sum", label: "sum"}),
+    new SocketObject({name: "sum", label: "sum", node : this}),
   ],
 }));
 
@@ -43,14 +43,14 @@ const node2: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   y: 340,
   name: "Math",
   inputSockets: [
-    new SocketObject({name: "x", label: "x"}),
-    new SocketObject({name: "y", label: "y"}),
-    new SocketObject({name: "z", label: "z"}),
-    new SocketObject({name: "w", label: "w"}),
+    new SocketObject({name: "x", label: "x", node : this}),
+    new SocketObject({name: "y", label: "y", node : this}),
+    new SocketObject({name: "z", label: "z", node : this}),
+    new SocketObject({name: "w", label: "w", node : this}),
   ],
   outputSockets: [
-    new SocketObject({name: "sum", label: "sum"}),
-    new SocketObject({name: "multiply", label: "multiply"}),
+    new SocketObject({name: "sum", label: "sum", node : this}),
+    new SocketObject({name: "multiply", label: "multiply", node : this}),
   ],
 }));
 
@@ -60,11 +60,11 @@ const node3: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   y: 82,
   name: "Add",
   inputSockets: [
-    new SocketObject({name: "x", label: "x"}),
-    new SocketObject({name: "y", label: "y"}),
+    new SocketObject({name: "x", label: "x", node : this}),
+    new SocketObject({name: "y", label: "y", node : this}),
   ],
   outputSockets: [
-    new SocketObject({name: "add", label: "add"}),
+    new SocketObject({name: "add", label: "add", node : this}),
 
   ],
 }));
@@ -237,31 +237,8 @@ const deactivateSelectedNode = () => {
   repaintEditor();
 }
 
-/**
- * Track if the mouse cursor is inside a node
- * @param node : the node we check the mouse is inside
- * @param x : mouse x
- * @param y : mouse y
- */
-const isInsideNode = (node: ReactiveVariable<NodeObject>, x: number, y: number) => {
-  return (
-      x >= node.x - node.socketRadius &&
-      x <= node.x + node.width + node.socketRadius &&
-      y >= node.y - node.socketRadius &&
-      y <= node.y + node.height + node.socketRadius
-  );
-};
-
-const isInsideSocket = (node: ReactiveVariable<NodeObject>, socket: ReactiveVariable<SocketObject>, x: number, y: number) => {
-  return (
-      x >= socket.x - node.socketRadius &&
-      x <= socket.x + node.socketRadius &&
-      y >= socket.y - node.socketRadius &&
-      y <= socket.y + node.socketRadius
-  );
-};
-
 const onMouseDown = (event: MouseEvent) => {
+
   deactivateSelectedNode();
 
   const x = event.offsetX;
@@ -271,6 +248,7 @@ const onMouseDown = (event: MouseEvent) => {
     if (isInsideNode(node, x, y)) {
 
       node.outputSockets.forEach(socket => {
+
         if(isInsideSocket(node, socket, x, y)) {
           selectedSockets[0] = socket;
         }

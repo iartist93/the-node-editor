@@ -27,11 +27,12 @@ export interface NodeType {
 
 export class NodeObject implements NodeType {
     id = 1;
+    name = "Sum";
     x = 1;
     y = 285;
     width = 200;
     height = 200;
-    headerHeight= 40;
+    headerHeight = 40;
     unit = 50;
     fill = '#4b4b4b';
     stroke = 'gray';
@@ -45,7 +46,6 @@ export class NodeObject implements NodeType {
     inputs = 2;
     outputs = 5;
     socketSpacing = 50;
-    name = "Sum";
     inputSockets: SocketObject[] = [];
     outputSockets: SocketObject[] = [];
 
@@ -54,4 +54,22 @@ export class NodeObject implements NodeType {
             Object.assign(this, node);
         }
     }
+
+
 }
+
+/**
+ * Track if the mouse cursor is inside a node
+ *
+ * @param node node to check if mouse is inside
+ * @param x mouse x
+ * @param y mouse y
+ */
+export const isInsideNode = (node: NodeObject, x: number, y: number) => {
+    return (
+        x >= node.x - node.socketRadius &&
+        x <= node.x + node.width + node.socketRadius &&
+        y >= node.y - node.socketRadius &&
+        y <= node.y + node.height + node.socketRadius
+    );
+};

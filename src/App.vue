@@ -2,29 +2,7 @@
 
 import {onBeforeUnmount, onMounted, reactive, ref} from "vue";
 import type {ReactiveVariable} from "vue/macros";
-
-interface Node {
-  id: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  unit: number;
-  fill: string;
-  stroke: string;
-  strokeWidth: number;
-  borderRadius: number;
-  draggable: boolean;
-  socketRadius: number;
-  socketColor: string;
-  socketColorIn: string;
-  socketColorOut: string;
-  inputs: number;
-  outputs: number;
-  socketSpacing: number;
-  inputSockets: any[]; // TODO: Socket[]
-  outputSockets: any[]; // TODO: Socket[]
-}
+import {NodeObject, Node} from "@/node";
 
 const canvas = ref<HTMLCanvasElement>();
 const ctx = ref<CanvasRenderingContext2D>();
@@ -42,25 +20,11 @@ const activeNodes: Node[] = reactive([]);
 const DEFAULT_STROKE = "gray";
 const SELECTED_STROKE = "yellow";
 
-const node1: ReactiveVariable<Node> = reactive({
+const node1: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   id: 1,
   x: 47,
   y: 285,
-  width: 200,
-  height: 200,
-  unit: 50,
-  fill: '#4b4b4b',
-  stroke: 'gray',
-  strokeWidth: 5,
-  borderRadius: 10,
-  draggable: true,
-  socketRadius: 10,
-  socketColor: "gray",
-  socketColorIn: "#ad89b5",
-  socketColorOut: "#f7aa69",
-  inputs: 2,
-  outputs: 5,
-  socketSpacing: 50,
+  name: "Sum",
   inputSockets: [
     {
       label: "x",
@@ -77,32 +41,18 @@ const node1: ReactiveVariable<Node> = reactive({
       name: "sum",
     },
   ],
-});
+}));
 
 /**
  * TODO:
  * Why I have to repeat all this in all nodes?
  * There should be some inheritance from base node default value and only override what we need
  */
-const node2: ReactiveVariable<Node> = reactive({
+const node2: ReactiveVariable<Node> = reactive(new NodeObject({
   id: 2,
   x: 600,
   y: 340,
-  width: 200,
-  height: 200,
-  unit: 50,
-  fill: '#4b4b4b',
-  stroke: 'gray',
-  strokeWidth: 5,
-  borderRadius: 10,
-  draggable: true,
-  socketRadius: 10,
-  socketColor: "gray",
-  socketColorIn: "#ad89b5",
-  socketColorOut: "#f7aa69",
-  inputs: 4,
-  outputs: 2,
-  socketSpacing: 50,
+  name: "Math",
   inputSockets: [
     {
       label: "x",
@@ -131,27 +81,13 @@ const node2: ReactiveVariable<Node> = reactive({
       name: "multiply",
     },
   ],
-});
+}));
 
-const node3: ReactiveVariable<Node> = reactive({
+const node3: ReactiveVariable<Node> = reactive(new NodeObject({
   id: 3,
   x: 606,
   y: 82,
-  width: 200,
-  height: 200,
-  unit: 50,
-  fill: '#4b4b4b',
-  stroke: 'gray',
-  strokeWidth: 5,
-  borderRadius: 10,
-  draggable: true,
-  socketRadius: 10,
-  socketColor: "gray",
-  socketColorIn: "#ad89b5",
-  socketColorOut: "#f7aa69",
-  inputs: 3,
-  outputs: 3,
-  socketSpacing: 50,
+  name: "Add",
   inputSockets: [
     {
       label: "x",
@@ -168,7 +104,7 @@ const node3: ReactiveVariable<Node> = reactive({
       name: "add",
     },
   ],
-});
+}));
 
 let allNodes = [node1, node2, node3];
 
@@ -219,8 +155,27 @@ const drawNode = (node: ReactiveVariable<Node>) => {
   ctx.value.fill();
   ctx.value.closePath();
 
+  // draw the node title
+  ctx.value.textAlign = "center";
+  ctx.value.font = 'bold 14px Courier New';
+  ctx.value.fillStyle = "white";
+  ctx.value.fillText(node.name, node.x + node.width/2, node.y + 25);
+
+  // draw divider
+  ctx.value.beginPath();
+  ctx.value.strokeStyle = "#fff";
+  ctx.value.lineWidth = 1;
+  ctx.value.moveTo(node.x, node.y + 40);
+  ctx.value.lineTo(node.x + node.width, node.y + 40);
+  ctx.value.stroke();
+  ctx.value.closePath();
+
+
+
+
+  // reset alpha
   ctx.value.globalAlpha = 1.0;
-  
+
   // draw inputs
   for (let i = 1; i <= node.inputSockets.length; i++) {
     const x = node.x;
@@ -403,6 +358,10 @@ const unregisterMouseEvents = () => {
 }
 
 onMounted(() => {
+
+
+  console.log("========> node 1 = ", node1, node2, node3);
+
   if (!canvas.value) return;
 
   ctx.value = canvas.value.getContext('2d');

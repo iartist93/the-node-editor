@@ -2,7 +2,8 @@
 
 import {onBeforeUnmount, onMounted, reactive, ref} from "vue";
 import type {ReactiveVariable} from "vue/macros";
-import {NodeObject, Node} from "@/node";
+import {NodeObject} from "@/node";
+import {SocketObject} from "@/socket";
 
 const canvas = ref<HTMLCanvasElement>();
 const ctx = ref<CanvasRenderingContext2D>();
@@ -15,7 +16,7 @@ let offsetY = ref(0);
 
 // TODO: This should be an array of selected nodes
 // active dragged node
-const activeNodes: Node[] = reactive([]);
+const activeNodes: NodeObject[] = reactive([]);
 
 const DEFAULT_STROKE = "gray";
 const SELECTED_STROKE = "yellow";
@@ -26,83 +27,43 @@ const node1: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   y: 285,
   name: "Sum",
   inputSockets: [
-    {
-      label: "x",
-      name: "x",
-    },
-    {
-      label: "y",
-      name: "y",
-    }
+    new SocketObject({name : "x", label: "x"}),
+    new SocketObject({name : "y", label: "y"}),
   ],
   outputSockets: [
-    {
-      label: "sum",
-      name: "sum",
-    },
+    new SocketObject({name : "sum", label: "sum"}),
   ],
 }));
 
-/**
- * TODO:
- * Why I have to repeat all this in all nodes?
- * There should be some inheritance from base node default value and only override what we need
- */
-const node2: ReactiveVariable<Node> = reactive(new NodeObject({
+const node2: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   id: 2,
   x: 600,
   y: 340,
   name: "Math",
   inputSockets: [
-    {
-      label: "x",
-      name: "x",
-    },
-    {
-      label: "y",
-      name: "y",
-    },
-    {
-      label: "z",
-      name: "z",
-    },
-    {
-      label: "w",
-      name: "w",
-    },
+    new SocketObject({name : "x", label: "x"}),
+    new SocketObject({name : "y", label: "y"}),
+    new SocketObject({name : "z", label: "z"}),
+    new SocketObject({name : "w", label: "w"}),
   ],
   outputSockets: [
-    {
-      label: "sum",
-      name: "sum",
-    },
-    {
-      label: "multiply",
-      name: "multiply",
-    },
+    new SocketObject({name : "sum", label: "sum"}),
+    new SocketObject({name : "multiply", label: "multiply"}),
   ],
 }));
 
-const node3: ReactiveVariable<Node> = reactive(new NodeObject({
+const node3: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   id: 3,
   x: 606,
   y: 82,
   name: "Add",
   inputSockets: [
-    {
-      label: "x",
-      name: "x",
-    },
-    {
-      label: "y",
-      name: "y",
-    },
+    new SocketObject({name : "x", label: "x"}),
+    new SocketObject({name : "y", label: "y"}),
   ],
   outputSockets: [
-    {
-      label: "add",
-      name: "add",
-    },
+    new SocketObject({name : "add", label: "add"}),
+
   ],
 }));
 
@@ -132,7 +93,7 @@ const initCanvas = () => {
   ctx.value.fillRect(0, 0, canvas.value.width, canvas.value.height);
 }
 
-const initNode = (node: ReactiveVariable<Node>) => {
+const initNode = (node: ReactiveVariable<NodeObject>) => {
   node.outputs = node.outputSockets.length;
   node.inputs = node.inputSockets.length;
 
@@ -141,7 +102,7 @@ const initNode = (node: ReactiveVariable<Node>) => {
   node.height = node.unit * (maxSocketsNum + 1) + node.headerHeight;
 }
 
-const drawNode = (node: ReactiveVariable<Node>) => {
+const drawNode = (node: ReactiveVariable<NodeObject>) => {
   if (!ctx.value) return;
 
   // draw the node body
@@ -170,7 +131,6 @@ const drawNode = (node: ReactiveVariable<Node>) => {
   ctx.value.stroke();
   ctx.value.closePath();
 
-
   // reset alpha
   ctx.value.globalAlpha = 1.0;
 
@@ -193,11 +153,9 @@ const drawNode = (node: ReactiveVariable<Node>) => {
     ctx.value.fillStyle = "#e4e4ea";
     ctx.value.fillText(node.inputSockets[i-1].label, x + node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
 
-    node.inputSockets[i - 1] = {
-      ...node.inputSockets[i - 1],
-      x,
-      y,
-    };
+    node.inputSockets[i-1].x = x;
+    node.inputSockets[i-1].y = y;
+
   }
 
   // draw outputs
@@ -228,7 +186,7 @@ const drawNode = (node: ReactiveVariable<Node>) => {
 
 };
 
-const drawConnections = (nodeA: Node, nodeB: Node) => {
+const drawConnections = (nodeA: NodeObject, nodeB: NodeObject) => {
   if (!ctx.value) return;
 
   const sourceX = nodeA.outputSockets[0].x;
@@ -281,9 +239,18 @@ const deactivateSelectedNode = () => {
  * Track if the mouse cursor is inside a node
  * @param node : the node we check the mouse is inside
  * @param x : mouse x
- * @param y : mousy y
+ * @param y : mouse y
  */
-const isInsideNode = (node: ReactiveVariable<Node>, x: number, y: number) => {
+const isInsideNode = (node: ReactiveVariable<NodeObject>, x: number, y: number) => {
+  return (
+      x >= node.x - node.socketRadius &&
+      x <= node.x + node.width + node.socketRadius &&
+      y >= node.y - node.socketRadius &&
+      y <= node.y + node.height + node.socketRadius
+  );
+};
+
+const isInsideSocket = (node: ReactiveVariable<NodeObject>, x: number, y: number) => {
   return (
       x >= node.x &&
       x <= node.x + node.width &&

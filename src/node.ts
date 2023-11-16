@@ -1,3 +1,5 @@
+import {SocketObject, type SocketType} from "@/socket";
+
 export interface NodeType {
     id: number;
     name: String;
@@ -19,8 +21,8 @@ export interface NodeType {
     outputs: number;
     socketSpacing: number;
     headerHeight: number;
-    inputSockets: any[]; // TODO: Socket[]
-    outputSockets: any[]; // TODO: Socket[]
+    inputSockets: SocketType[];
+    outputSockets: SocketType[];
 }
 
 export class NodeObject implements NodeType {
@@ -44,8 +46,8 @@ export class NodeObject implements NodeType {
     outputs = 5;
     socketSpacing = 50;
     name = "Sum";
-    inputSockets = [];
-    outputSockets = [];
+    inputSockets: SocketType[] = [];
+    outputSockets: SocketType[] = [];
 
     constructor(node?: Partial<NodeType>) {
         if (node) {

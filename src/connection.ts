@@ -1,5 +1,6 @@
 import {NodeObject} from "@/node";
 import {SocketObject} from "@/socket";
+import {type Ref} from "vue";
 
 export interface ConnectionType {
     id: number;
@@ -30,3 +31,32 @@ export class ConnectionObject implements ConnectionType {
         }
     }
 }
+
+
+export const drawConnections = (ctx: Ref<CanvasRenderingContext2D | null>, connection: ConnectionObject) => {
+    if (!ctx.value) {
+        console.error("You must provide CanvasRenderingContext2D");
+        return;
+    }
+
+    const sourceX = connection.sourceX;
+    const sourceY = connection.sourceY;
+    const targetX = connection.targetX;
+    const targetY = connection.targetY;
+
+    // control points
+    const cp1X = sourceX + (targetX - sourceX) * (5 / 10);
+    const cp2X = sourceX + (targetX - sourceX) * (5 / 10);
+    const cp1Y = sourceY;
+    const cp2Y = targetY;
+
+    ctx.value.beginPath();
+    ctx.value.moveTo(sourceX, sourceY);
+    ctx.value.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, targetX, targetY);
+    ctx.value.lineWidth = 3;
+    ctx.value.strokeStyle = "white";
+    ctx.value.stroke();
+    ctx.value.closePath();
+}
+
+

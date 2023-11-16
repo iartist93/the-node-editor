@@ -1,15 +1,15 @@
 <script setup lang="ts">
 
-import {computed, onBeforeUnmount, onMounted, reactive, ref} from "vue";
+import {computed, onBeforeUnmount, onMounted, reactive, Ref, ref} from "vue";
 import * as Vue from "vue-demi";
 
 import type {ReactiveVariable} from "vue/macros";
 import {NodeObject, isInsideNode} from "@/node";
 import {SocketObject, isInsideSocket} from "@/socket";
-import {ConnectionObject} from "@/connection";
+import {ConnectionObject, drawConnections} from "@/connection";
 
-const canvas = ref<HTMLCanvasElement>();
-const ctx = ref<CanvasRenderingContext2D>();
+const canvas : Ref<HTMLCanvasElement | null> = ref(null);
+const ctx : Ref<CanvasRenderingContext2D | null> = ref(null);
 
 // track mouse events
 let isDragging = ref(false);
@@ -20,7 +20,7 @@ let offsetY = ref(0);
 // TODO: This should be an array of selected nodes
 // active dragged node
 const activeNodes: NodeObject[] = reactive([]);
-const selectedSockets : SocketObject[] = reactive([]);
+const selectedSockets: SocketObject[] = reactive([]);
 
 const DEFAULT_STROKE = "gray";
 const SELECTED_STROKE = "yellow";
@@ -35,7 +35,7 @@ const node1: ReactiveVariable<NodeObject> = reactive(new NodeObject({
     reactive(new SocketObject({name: "y", label: "y", node: this})),
   ],
   outputSockets: [
-    reactive(new SocketObject({name: "sum", label: "sum", node : this})),
+    reactive(new SocketObject({name: "sum", label: "sum", node: this})),
   ],
 }));
 
@@ -45,14 +45,14 @@ const node2: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   y: 340,
   name: "Math",
   inputSockets: [
-    reactive(new SocketObject({name: "x", label: "x", node : this})),
-    reactive(new SocketObject({name: "y", label: "y", node : this})),
-    reactive(new SocketObject({name: "z", label: "z", node : this})),
-    reactive(new SocketObject({name: "w", label: "w", node : this})),
+    reactive(new SocketObject({name: "x", label: "x", node: this})),
+    reactive(new SocketObject({name: "y", label: "y", node: this})),
+    reactive(new SocketObject({name: "z", label: "z", node: this})),
+    reactive(new SocketObject({name: "w", label: "w", node: this})),
   ],
   outputSockets: [
-    reactive(new SocketObject({name: "sum", label: "sum", node : this})),
-    reactive(new SocketObject({name: "multiply", label: "multiply", node : this})),
+    reactive(new SocketObject({name: "sum", label: "sum", node: this})),
+    reactive(new SocketObject({name: "multiply", label: "multiply", node: this})),
   ],
 }));
 
@@ -62,11 +62,11 @@ const node3: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   y: 82,
   name: "Add",
   inputSockets: [
-    reactive(new SocketObject({name: "x", label: "x", node : this})),
-    reactive(new SocketObject({name: "y", label: "y", node : this})),
+    reactive(new SocketObject({name: "x", label: "x", node: this})),
+    reactive(new SocketObject({name: "y", label: "y", node: this})),
   ],
   outputSockets: [
-    reactive(new SocketObject({name: "add", label: "add", node : this})),
+    reactive(new SocketObject({name: "add", label: "add", node: this})),
 
   ],
 }));
@@ -188,7 +188,7 @@ const drawNode = (node: ReactiveVariable<NodeObject>) => {
   }
 };
 
-const connection1  = computed(() => new ConnectionObject({
+const connection1 = computed(() => new ConnectionObject({
   id: 1,
   inputNode: node1,
   inputSocket: node1.outputSockets[0],
@@ -201,8 +201,7 @@ const connection1  = computed(() => new ConnectionObject({
 }));
 
 
-
-const connection2  = computed(() => new ConnectionObject({
+const connection2 = computed(() => new ConnectionObject({
   id: 1,
   inputNode: node1,
   inputSocket: node1.outputSockets[0],
@@ -214,35 +213,13 @@ const connection2  = computed(() => new ConnectionObject({
   targetY: node3.inputSockets[0].y,
 }));
 
-const drawConnections = (connection: ConnectionObject) => {
-  if (!ctx.value) return;
-
-  const sourceX = connection.sourceX;
-  const sourceY = connection.sourceY;
-  const targetX = connection.targetX;
-  const targetY = connection.targetY;
-
-  // control points
-  const cp1X = sourceX + (targetX - sourceX) * (5 / 10);
-  const cp2X = sourceX + (targetX - sourceX) * (5 / 10);
-  const cp1Y = sourceY;
-  const cp2Y = targetY;
-
-  ctx.value.beginPath();
-  ctx.value.moveTo(sourceX, sourceY);
-  ctx.value.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, targetX, targetY);
-  ctx.value.lineWidth = 3;
-  ctx.value.strokeStyle = "white";
-  ctx.value.stroke();
-  ctx.value.closePath();
-}
-
 const repaintEditor = () => {
+
   initCanvas();
   allNodes.forEach(initNode);
   allNodes.forEach(drawNode);
-  drawConnections(connection1.value);
-  drawConnections(connection2.value);
+  drawConnections(ctx, connection1.value);
+  drawConnections(ctx, connection2.value);
 }
 
 const activateSelectedNode = () => {
@@ -250,7 +227,6 @@ const activateSelectedNode = () => {
 
   allNodes = allNodes.filter(node => node.id !== activeNodes[0].id);
   allNodes.push(activeNodes[0]);
-
 
   repaintEditor();
 }
@@ -275,18 +251,18 @@ const onMouseDown = (event: MouseEvent) => {
 
       node.outputSockets.forEach(socket => {
 
-        if(isInsideSocket(node, socket, x, y)) {
+        if (isInsideSocket(node, socket, x, y)) {
           selectedSockets[0] = socket;
         }
       })
 
       node.inputSockets.forEach(socket => {
-        if(isInsideSocket(node, socket, x, y)) {
+        if (isInsideSocket(node, socket, x, y)) {
           selectedSockets[0] = socket;
         }
       })
 
-      if(selectedSockets[0]) {
+      if (selectedSockets[0]) {
         console.log("-----------> selected socket ", selectedSockets[0].name);
       }
 

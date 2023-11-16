@@ -17,6 +17,8 @@ let offsetY = ref(0);
 // TODO: This should be an array of selected nodes
 // active dragged node
 const activeNodes: NodeObject[] = reactive([]);
+const selectedSockets : SocketObject[] = reactive([]);
+
 
 const DEFAULT_STROKE = "gray";
 const SELECTED_STROKE = "yellow";
@@ -27,11 +29,11 @@ const node1: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   y: 285,
   name: "Sum",
   inputSockets: [
-    new SocketObject({name : "x", label: "x"}),
-    new SocketObject({name : "y", label: "y"}),
+    new SocketObject({name: "x", label: "x"}),
+    new SocketObject({name: "y", label: "y"}),
   ],
   outputSockets: [
-    new SocketObject({name : "sum", label: "sum"}),
+    new SocketObject({name: "sum", label: "sum"}),
   ],
 }));
 
@@ -41,14 +43,14 @@ const node2: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   y: 340,
   name: "Math",
   inputSockets: [
-    new SocketObject({name : "x", label: "x"}),
-    new SocketObject({name : "y", label: "y"}),
-    new SocketObject({name : "z", label: "z"}),
-    new SocketObject({name : "w", label: "w"}),
+    new SocketObject({name: "x", label: "x"}),
+    new SocketObject({name: "y", label: "y"}),
+    new SocketObject({name: "z", label: "z"}),
+    new SocketObject({name: "w", label: "w"}),
   ],
   outputSockets: [
-    new SocketObject({name : "sum", label: "sum"}),
-    new SocketObject({name : "multiply", label: "multiply"}),
+    new SocketObject({name: "sum", label: "sum"}),
+    new SocketObject({name: "multiply", label: "multiply"}),
   ],
 }));
 
@@ -58,11 +60,11 @@ const node3: ReactiveVariable<NodeObject> = reactive(new NodeObject({
   y: 82,
   name: "Add",
   inputSockets: [
-    new SocketObject({name : "x", label: "x"}),
-    new SocketObject({name : "y", label: "y"}),
+    new SocketObject({name: "x", label: "x"}),
+    new SocketObject({name: "y", label: "y"}),
   ],
   outputSockets: [
-    new SocketObject({name : "add", label: "add"}),
+    new SocketObject({name: "add", label: "add"}),
 
   ],
 }));
@@ -120,7 +122,7 @@ const drawNode = (node: ReactiveVariable<NodeObject>) => {
   ctx.value.textAlign = "center";
   ctx.value.font = 'bold 14px Courier New';
   ctx.value.fillStyle = "white";
-  ctx.value.fillText(node.name, node.x + node.width/2, node.y + node.headerHeight/1.6);
+  ctx.value.fillText(node.name, node.x + node.width / 2, node.y + node.headerHeight / 1.6);
 
   // draw divider
   ctx.value.beginPath();
@@ -151,10 +153,10 @@ const drawNode = (node: ReactiveVariable<NodeObject>) => {
     ctx.value.textAlign = "left";
     ctx.value.font = '14px Courier New';
     ctx.value.fillStyle = "#e4e4ea";
-    ctx.value.fillText(node.inputSockets[i-1].label, x + node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
+    ctx.value.fillText(node.inputSockets[i - 1].label, x + node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
 
-    node.inputSockets[i-1].x = x;
-    node.inputSockets[i-1].y = y;
+    node.inputSockets[i - 1].x = x;
+    node.inputSockets[i - 1].y = y;
 
   }
 
@@ -175,7 +177,7 @@ const drawNode = (node: ReactiveVariable<NodeObject>) => {
     ctx.value.textAlign = "right";
     ctx.value.font = '14px Courier New';
     ctx.value.fillStyle = "#e4e4ea";
-    ctx.value.fillText(node.outputSockets[i-1].label, x - node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
+    ctx.value.fillText(node.outputSockets[i - 1].label, x - node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
 
     node.outputSockets[i - 1] = {
       ...node.outputSockets[i - 1],
@@ -250,12 +252,12 @@ const isInsideNode = (node: ReactiveVariable<NodeObject>, x: number, y: number) 
   );
 };
 
-const isInsideSocket = (node: ReactiveVariable<NodeObject>, x: number, y: number) => {
+const isInsideSocket = (node: ReactiveVariable<NodeObject>, socket: ReactiveVariable<SocketObject>, x: number, y: number) => {
   return (
-      x >= node.x &&
-      x <= node.x + node.width &&
-      y >= node.y &&
-      y <= node.y + node.height
+      x >= socket.x - node.socketRadius &&
+      x <= socket.x + node.socketRadius &&
+      y >= socket.y - node.socketRadius &&
+      y <= socket.y + node.socketRadius
   );
 };
 
@@ -267,6 +269,23 @@ const onMouseDown = (event: MouseEvent) => {
 
   allNodes.forEach((node) => {
     if (isInsideNode(node, x, y)) {
+
+      node.outputSockets.forEach(socket => {
+        if(isInsideSocket(node, socket, x, y)) {
+          selectedSockets[0] = socket;
+        }
+      })
+
+      node.inputSockets.forEach(socket => {
+        if(isInsideSocket(node, socket, x, y)) {
+          selectedSockets[0] = socket;
+        }
+      })
+
+      if(selectedSockets[0]) {
+        console.log("-----------> selected socket ", selectedSockets[0].name);
+      }
+
       isDragging.value = true;
       activeNodes[0] = node;
       offsetX.value = x - node.x;

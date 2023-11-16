@@ -33,7 +33,7 @@ export class ConnectionObject implements ConnectionType {
 }
 
 
-export const drawConnections = (ctx: Ref<CanvasRenderingContext2D | null>, connection: ConnectionObject) => {
+export const drawConnection = (ctx: Ref<CanvasRenderingContext2D | null>, connection: ConnectionObject) => {
     if (!ctx.value) {
         console.error("You must provide CanvasRenderingContext2D");
         return;

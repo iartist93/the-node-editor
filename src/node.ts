@@ -18,6 +18,7 @@ export interface NodeType {
     inputs: number;
     outputs: number;
     socketSpacing: number;
+    headerHeight: number;
     inputSockets: any[]; // TODO: Socket[]
     outputSockets: any[]; // TODO: Socket[]
 }
@@ -28,6 +29,7 @@ export class NodeObject implements NodeType {
     y = 285;
     width = 200;
     height = 200;
+    headerHeight= 40;
     unit = 50;
     fill = '#4b4b4b';
     stroke = 'gray';

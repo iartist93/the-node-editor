@@ -138,7 +138,7 @@ const initNode = (node: ReactiveVariable<Node>) => {
 
   // set the height dynamically based on how many sockets
   const maxSocketsNum = Math.max(node.outputs, node.inputs);
-  node.height = node.unit * (maxSocketsNum + 1);
+  node.height = node.unit * (maxSocketsNum + 1) + node.headerHeight;
 }
 
 const drawNode = (node: ReactiveVariable<Node>) => {
@@ -159,18 +159,16 @@ const drawNode = (node: ReactiveVariable<Node>) => {
   ctx.value.textAlign = "center";
   ctx.value.font = 'bold 14px Courier New';
   ctx.value.fillStyle = "white";
-  ctx.value.fillText(node.name, node.x + node.width/2, node.y + 25);
+  ctx.value.fillText(node.name, node.x + node.width/2, node.y + node.headerHeight/1.6);
 
   // draw divider
   ctx.value.beginPath();
-  ctx.value.strokeStyle = "#fff";
+  ctx.value.strokeStyle = "#8c8c8c";
   ctx.value.lineWidth = 1;
-  ctx.value.moveTo(node.x, node.y + 40);
-  ctx.value.lineTo(node.x + node.width, node.y + 40);
+  ctx.value.moveTo(node.x, node.y + node.headerHeight);
+  ctx.value.lineTo(node.x + node.width, node.y + node.headerHeight);
   ctx.value.stroke();
   ctx.value.closePath();
-
-
 
 
   // reset alpha
@@ -179,7 +177,7 @@ const drawNode = (node: ReactiveVariable<Node>) => {
   // draw inputs
   for (let i = 1; i <= node.inputSockets.length; i++) {
     const x = node.x;
-    const y = node.y + (i * node.socketSpacing);
+    const y = node.y + (i * node.socketSpacing) + node.headerHeight;
 
     ctx.value.beginPath();
     ctx.value.arc(x, y, node.socketRadius, 0, 2 * Math.PI);
@@ -205,7 +203,7 @@ const drawNode = (node: ReactiveVariable<Node>) => {
   // draw outputs
   for (let i = 1; i <= node.outputSockets.length; i++) {
     const x = node.x + node.width;
-    const y = node.y + (i * node.socketSpacing);
+    const y = node.y + (i * node.socketSpacing) + node.headerHeight;
 
     ctx.value.beginPath();
     ctx.value.arc(x, y, node.socketRadius, 0, 2 * Math.PI);
@@ -358,10 +356,6 @@ const unregisterMouseEvents = () => {
 }
 
 onMounted(() => {
-
-
-  console.log("========> node 1 = ", node1, node2, node3);
-
   if (!canvas.value) return;
 
   ctx.value = canvas.value.getContext('2d');

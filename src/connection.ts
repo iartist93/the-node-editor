@@ -1,5 +1,5 @@
-import {NodeObject} from "@/node";
-import {SocketObject} from "@/socket";
+import {type NodeType} from "@/node";
+import {type SocketType} from "@/socket";
 import {type Ref} from "vue";
 
 // TODO: Man!!! I think it's better to use Composable here !!! = useConnection()
@@ -11,10 +11,10 @@ export interface ConnectionType {
     sourceY: number;
     targetX: number;
     targetY: number;
-    inputNode: NodeObject | null;
-    outputNode: NodeObject | null;
-    inputSocket: SocketObject | null;
-    outputSocket: SocketObject | null;
+    inputNode: NodeType | null;
+    outputNode: NodeType | null;
+    inputSocket: SocketType | null;
+    outputSocket: SocketType | null;
 }
 
 export class ConnectionObject implements ConnectionType {
@@ -23,10 +23,10 @@ export class ConnectionObject implements ConnectionType {
     sourceY = 0;
     targetX = 0;
     targetY = 0;
-    inputNode: NodeObject | null = null;
-    outputNode: NodeObject | null = null;
-    inputSocket: SocketObject | null = null;
-    outputSocket: SocketObject | null = null;
+    inputNode: NodeType | null = null;
+    outputNode: NodeType | null = null;
+    inputSocket: SocketType | null = null;
+    outputSocket: SocketType | null = null;
 
     constructor(connection?: Partial<ConnectionType>) {
         if (connection) {

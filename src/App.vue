@@ -3,10 +3,10 @@
 import {computed, onBeforeUnmount, onMounted, reactive, ref} from "vue";
 import {type ReactiveVariable} from "vue/macros";
 
-import {NodeObject, isInsideNode, initNode, drawNode} from "@/node";
-import {SocketObject, isInsideSocket} from "@/socket";
-import {ConnectionObject, drawConnection} from "@/connection";
 import {useCanvas} from "@/canvas";
+import {type NodeType, useNode, useNodeUtils} from "@/node";
+import {type SocketType, useSocket, useSocketUtils} from "@/socket";
+import {ConnectionObject, drawConnection} from "@/connection";
 import {useMouse} from "@/mouse";
 
 // track mouse events
@@ -17,57 +17,64 @@ let offsetY = ref(0);
 
 // TODO: This should be an array of selected nodes
 // active dragged node
-const activeNodes: NodeObject[] = reactive([]);
-const selectedSockets: SocketObject[] = reactive([]);
+const activeNodes: NodeType[] = reactive([]);
+const selectedSockets: SocketType[] = reactive([]);
 
 const DEFAULT_STROKE = "gray";
 const SELECTED_STROKE = "yellow";
 
-const node1: ReactiveVariable<NodeObject> = reactive(new NodeObject({
-  id: 1,
-  x: 47,
-  y: 285,
-  name: "Sum",
-  inputSockets: [
-    reactive(new SocketObject({name: "x", label: "x", node: this})),
-    reactive(new SocketObject({name: "y", label: "y", node: this})),
-  ],
-  outputSockets: [
-    reactive(new SocketObject({name: "sum", label: "sum", node: this})),
-  ],
-}));
+//====================================================
+// Build the editor nodes, sockets, connections
+//====================================================
 
-const node2: ReactiveVariable<NodeObject> = reactive(new NodeObject({
-  id: 2,
-  x: 600,
-  y: 340,
-  name: "Math",
-  inputSockets: [
-    reactive(new SocketObject({name: "x", label: "x", node: this})),
-    reactive(new SocketObject({name: "y", label: "y", node: this})),
-    reactive(new SocketObject({name: "z", label: "z", node: this})),
-    reactive(new SocketObject({name: "w", label: "w", node: this})),
-  ],
-  outputSockets: [
-    reactive(new SocketObject({name: "sum", label: "sum", node: this})),
-    reactive(new SocketObject({name: "multiply", label: "multiply", node: this})),
-  ],
-}));
+const {initNode, isInsideNode, drawNode} = useNodeUtils();
+const {isInsideSocket} = useSocketUtils();
 
-const node3: ReactiveVariable<NodeObject> = reactive(new NodeObject({
-  id: 3,
-  x: 606,
-  y: 82,
-  name: "Add",
-  inputSockets: [
-    reactive(new SocketObject({name: "x", label: "x", node: this})),
-    reactive(new SocketObject({name: "y", label: "y", node: this})),
-  ],
-  outputSockets: [
-    reactive(new SocketObject({name: "add", label: "add", node: this})),
+const {socket: socket1_i1} = useSocket({name: "x", label: "x", node: this});
+const {socket: socket1_i2} = useSocket({name: "y", label: "y", node: this});
+const {socket: socket1_o1} = useSocket({name: "sum", label: "sum", node: this});
 
-  ],
-}));
+const {socket: socket2_i1} = useSocket({name: "x", label: "x", node: this});
+const {socket: socket2_i2} = useSocket({name: "y", label: "y", node: this});
+const {socket: socket2_i3} = useSocket({name: "z", label: "z", node: this});
+const {socket: socket2_i4} = useSocket({name: "w", label: "w", node: this});
+const {socket: socket2_o1} = useSocket({name: "sum", label: "sum", node: this});
+const {socket: socket2_o2} = useSocket({name: "add", label: "add", node: this});
+
+const {socket: socket3_i1} = useSocket({name: "x", label: "x", node: this});
+const {socket: socket3_i2} = useSocket({name: "y", label: "y", node: this});
+const {socket: socket3_o1} = useSocket({name: "add", label: "add", node: this});
+
+
+const {node: node1} = useNode({
+      id: 1,
+      x: 47,
+      y: 285,
+      name: "Sum",
+      inputSockets: [socket1_i1, socket1_i2],
+      outputSockets: [socket1_o1],
+    }
+);
+
+const {node: node2} = useNode({
+      id: 2,
+      x: 600,
+      y: 340,
+      name: "Math",
+      inputSockets: [socket2_i1, socket2_i2, socket2_i3, socket2_i4],
+      outputSockets: [socket2_o1, socket2_o2],
+    }
+);
+
+const {node: node3} = useNode({
+      id: 3,
+      x: 606,
+      y: 82,
+      name: "Add",
+      inputSockets: [socket3_i1, socket3_i2],
+      outputSockets: [socket2_o1],
+    }
+);
 
 const connection1 = computed(() => new ConnectionObject({
   id: 1,
@@ -97,13 +104,15 @@ const connection2 = computed(() => new ConnectionObject({
 let allNodes = [node1, node2, node3];
 let allConnections = [connection1, connection2];
 
-//----------------------------------------------------------------
-// Canvas
-//--------------
+//====================================================
+// Build the canvas
+//====================================================
 
 const {canvas, ctx, renderEditor} = useCanvas();
 
-//----------------------------------------------------------------
+//====================================================
+// Handle editor events
+//====================================================
 
 const repaintEditor = () => {
   renderEditor();
@@ -116,7 +125,6 @@ const activateSelectedNode = () => {
   activeNodes[0].stroke = SELECTED_STROKE;
   allNodes = allNodes.filter(node => node.id !== activeNodes[0].id);
   allNodes.push(activeNodes[0]);
-
   repaintEditor();
 }
 
@@ -128,10 +136,9 @@ const deactivateSelectedNode = () => {
   repaintEditor();
 }
 
-
-//==========================================================
-// Handle Mouse Event
-//-----------------------
+//====================================================
+// Build the mouse events
+//====================================================
 
 const onMouseDown = (event: MouseEvent) => {
   deactivateSelectedNode();
@@ -197,7 +204,8 @@ onMounted(() => {
   repaintEditor();
 })
 
-onBeforeUnmount(() => {})
+onBeforeUnmount(() => {
+})
 
 
 </script>

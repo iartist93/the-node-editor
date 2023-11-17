@@ -1,14 +1,13 @@
 <script setup lang="ts">
 
-import {computed, onBeforeUnmount, onMounted, reactive, type Ref, ref} from "vue";
+import {computed, onBeforeUnmount, onMounted, reactive, ref} from "vue";
 import {type ReactiveVariable} from "vue/macros";
 
 import {NodeObject, isInsideNode, initNode, drawNode} from "@/node";
 import {SocketObject, isInsideSocket} from "@/socket";
 import {ConnectionObject, drawConnection} from "@/connection";
-
-const canvas : Ref<HTMLCanvasElement | null> = ref(null);
-const ctx : Ref<CanvasRenderingContext2D | null> = ref(null);
+import {useCanvas} from "@/canvas";
+import {useMouse} from "@/mouse";
 
 // track mouse events
 let isDragging = ref(false);
@@ -98,32 +97,16 @@ const connection2 = computed(() => new ConnectionObject({
 let allNodes = [node1, node2, node3];
 let allConnections = [connection1, connection2];
 
-/**
- * Set the canvas size
- * Currently it fill the whole screen
- */
-const setCanvasSize = () => {
-  if (!canvas.value) return;
+//----------------------------------------------------------------
+// Canvas
+//--------------
 
-  canvas.value.width = document.body.clientWidth;
-  canvas.value.height = document.body.clientHeight;
-}
+const {canvas, ctx, renderEditor} = useCanvas();
 
-/**
- * Editor initialization and draw the editor background.
- */
-const initCanvas = () => {
-  if (!ctx.value || !canvas.value) return;
-
-  setCanvasSize();
-
-  ctx.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
-  ctx.value.fillStyle = "#24232c";
-  ctx.value.fillRect(0, 0, canvas.value.width, canvas.value.height);
-}
+//----------------------------------------------------------------
 
 const repaintEditor = () => {
-  initCanvas();
+  renderEditor();
   allNodes.forEach(initNode);
   allNodes.forEach(node => drawNode(ctx, node));
   allConnections.forEach(connection => drawConnection(ctx, connection.value));
@@ -131,7 +114,6 @@ const repaintEditor = () => {
 
 const activateSelectedNode = () => {
   activeNodes[0].stroke = SELECTED_STROKE;
-
   allNodes = allNodes.filter(node => node.id !== activeNodes[0].id);
   allNodes.push(activeNodes[0]);
 
@@ -146,8 +128,12 @@ const deactivateSelectedNode = () => {
   repaintEditor();
 }
 
-const onMouseDown = (event: MouseEvent) => {
 
+//==========================================================
+// Handle Mouse Event
+//-----------------------
+
+const onMouseDown = (event: MouseEvent) => {
   deactivateSelectedNode();
 
   const x = event.offsetX;
@@ -155,9 +141,7 @@ const onMouseDown = (event: MouseEvent) => {
 
   allNodes.forEach((node) => {
     if (isInsideNode(node, x, y)) {
-
       node.outputSockets.forEach(socket => {
-
         if (isInsideSocket(node, socket, x, y)) {
           selectedSockets[0] = socket;
         }
@@ -193,52 +177,27 @@ const onMouseMove = (event: MouseEvent) => {
   }
 };
 
-const onMouseUp = () => {
+const onMouseUp = (event: MouseEvent) => {
   isDragging.value = false;
 };
 
-const onMouseEnter = () => {
+const onMouseEnter = (event: MouseEvent) => {
   isHovered.value = true;
-  // You can add code to handle hover effects here
 };
 
-const onMouseLeave = () => {
+const onMouseLeave = (event: MouseEvent) => {
   isHovered.value = false;
-  // You can add code to handle when the mouse leaves the canvas here
 };
 
-
-const registerMouseEvents = () => {
-  if (!canvas.value) return;
-
-  canvas.value.addEventListener('mousedown', onMouseDown);
-  canvas.value.addEventListener('mousemove', onMouseMove);
-  canvas.value.addEventListener('mouseup', onMouseUp);
-  canvas.value.addEventListener('mouseenter', onMouseEnter);
-  canvas.value.addEventListener('mouseleave', onMouseLeave);
-}
-
-const unregisterMouseEvents = () => {
-  if (!canvas.value) return;
-
-  canvas.value.removeEventListener('mousedown', onMouseDown);
-  canvas.value.removeEventListener('mousemove', onMouseMove);
-  canvas.value.removeEventListener('mouseup', onMouseUp);
-  canvas.value.removeEventListener('mouseenter', onMouseEnter);
-  canvas.value.removeEventListener('mouseleave', onMouseLeave);
-}
+useMouse(canvas, onMouseUp, onMouseDown, onMouseMove, onMouseEnter, onMouseLeave);
 
 onMounted(() => {
   if (!canvas.value) return;
-
   ctx.value = canvas.value.getContext('2d');
   repaintEditor();
-  registerMouseEvents();
 })
 
-onBeforeUnmount(() => {
-  unregisterMouseEvents();
-})
+onBeforeUnmount(() => {})
 
 
 </script>

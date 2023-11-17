@@ -3,6 +3,8 @@ import {type ReactiveVariable} from "vue/macros";
 import * as Vue from "vue-demi";
 import {type Ref} from "vue";
 
+// TODO: Man!!! I think it's better to use Composable here !!! = useNode()
+
 export interface NodeType {
     id: number;
     name: String;

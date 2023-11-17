@@ -2,6 +2,9 @@ import {NodeObject} from "@/node";
 import {SocketObject} from "@/socket";
 import {type Ref} from "vue";
 
+// TODO: Man!!! I think it's better to use Composable here !!! = useConnection()
+
+
 export interface ConnectionType {
     id: number;
     sourceX: number;

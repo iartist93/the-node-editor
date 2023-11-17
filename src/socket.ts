@@ -1,5 +1,7 @@
 import {NodeObject} from "@/node";
 
+// TODO: Man!!! I think it's better to use Composable here !!! = useSocket()
+
 export interface SocketType {
     id: number;
     name: String;

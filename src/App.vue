@@ -6,8 +6,9 @@ import {type ReactiveVariable} from "vue/macros";
 import {useCanvas} from "@/canvas";
 import {type NodeType, useNode, useNodeUtils} from "@/node";
 import {type SocketType, useSocket, useSocketUtils} from "@/socket";
-import {ConnectionObject, drawConnection} from "@/connection";
+import {useConnection, useConnectionUtils} from "@/connection";
 import {useMouse} from "@/mouse";
+
 
 // track mouse events
 let isDragging = ref(false);
@@ -29,6 +30,7 @@ const SELECTED_STROKE = "yellow";
 
 const {initNode, isInsideNode, drawNode} = useNodeUtils();
 const {isInsideSocket} = useSocketUtils();
+const {drawConnection} = useConnectionUtils();
 
 const {socket: socket1_i1} = useSocket({name: "x", label: "x", node: this});
 const {socket: socket1_i2} = useSocket({name: "y", label: "y", node: this});
@@ -44,7 +46,6 @@ const {socket: socket2_o2} = useSocket({name: "add", label: "add", node: this});
 const {socket: socket3_i1} = useSocket({name: "x", label: "x", node: this});
 const {socket: socket3_i2} = useSocket({name: "y", label: "y", node: this});
 const {socket: socket3_o1} = useSocket({name: "add", label: "add", node: this});
-
 
 const {node: node1} = useNode({
       id: 1,
@@ -76,30 +77,22 @@ const {node: node3} = useNode({
     }
 );
 
-const connection1 = computed(() => new ConnectionObject({
-  id: 1,
-  inputNode: node1,
-  inputSocket: node1.outputSockets[0],
-  outputNode: node2,
-  outputSocket: node2.inputSockets[0],
-  sourceX: node1.outputSockets[0].x,
-  sourceY: node1.outputSockets[0].y,
-  targetX: node2.inputSockets[0].x,
-  targetY: node2.inputSockets[0].y,
-}));
+const {connection: connection1} = useConnection(
+    1,
+    node1,
+    node2,
+    node1.outputSockets[0],
+    node2.inputSockets[0],
+)
 
+const {connection: connection2} = useConnection(
+    2,
+    node1,
+    node3,
+    node1.outputSockets[0],
+    node3.inputSockets[0],
+)
 
-const connection2 = computed(() => new ConnectionObject({
-  id: 1,
-  inputNode: node1,
-  inputSocket: node1.outputSockets[0],
-  outputNode: node3,
-  outputSocket: node3.inputSockets[0],
-  sourceX: node1.outputSockets[0].x,
-  sourceY: node1.outputSockets[0].y,
-  targetX: node3.inputSockets[0].x,
-  targetY: node3.inputSockets[0].y,
-}));
 
 let allNodes = [node1, node2, node3];
 let allConnections = [connection1, connection2];
@@ -118,7 +111,7 @@ const repaintEditor = () => {
   renderEditor();
   allNodes.forEach(initNode);
   allNodes.forEach(node => drawNode(ctx, node));
-  allConnections.forEach(connection => drawConnection(ctx, connection.value));
+  allConnections.forEach(connection => drawConnection(ctx, connection));
 }
 
 const activateSelectedNode = () => {

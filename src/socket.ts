@@ -1,6 +1,7 @@
 import {type NodeType} from "@/node";
 import type {ReactiveVariable} from "vue/macros";
-import {reactive} from "vue";
+import {reactive, type Ref} from "vue";
+import * as Vue from "vue-demi";
 
 export interface SocketType {
     id: number;
@@ -8,6 +9,10 @@ export interface SocketType {
     label: string;
     x: number;
     y: number;
+    color: string;
+    stroke: string;
+    colorIn: string;
+    colorOut: string;
     node: NodeType | null
 }
 
@@ -18,6 +23,7 @@ interface useSocketType {
 
 interface useSocketUtilsType {
     isInsideSocket: (node: NodeType, socket: SocketType, x: number, y: number) => boolean;
+    drawSocket : (ctx: Ref<CanvasRenderingContext2D | null>, node: ReactiveVariable<NodeType>, socket: ReactiveVariable<SocketType>) => void;
 }
 
 export const useSocket = (newSocket?: Partial<SocketType>): useSocketType => {
@@ -27,6 +33,10 @@ export const useSocket = (newSocket?: Partial<SocketType>): useSocketType => {
         label: "[SOCKET]",
         x: 0,
         y: 0,
+        color: "gray",
+        colorIn: "#ad89b5",
+        colorOut: "#f7aa69",
+        stroke : "#24232c",
         node: null,
     }
 
@@ -55,7 +65,63 @@ export const useSocketUtils = () => {
         );
     };
 
+    const drawSocket = (ctx: Ref<CanvasRenderingContext2D | null>, node: ReactiveVariable<NodeType>) => {
+        if (!ctx.value) {
+            console.error("You must provide CanvasRenderingContext2D");
+            return;
+        }
+
+        for (let i = 1; i <= node.inputSockets.length; i++) {
+            const x = node.x;
+            const y = node.y + (i * node.socketSpacing) + node.headerHeight;
+            const socket = node.inputSockets[i-1];
+
+            ctx.value.beginPath();
+            ctx.value.arc(x, y, node.socketRadius, 0, 2 * Math.PI);
+            ctx.value.fillStyle = socket.colorIn;
+            ctx.value.fill();
+            ctx.value.strokeStyle = socket.stroke;
+            ctx.value.lineWidth = 2;
+            ctx.value.stroke();
+            ctx.value.closePath();
+
+            ctx.value.textAlign = "left";
+            ctx.value.font = '14px Courier New';
+            ctx.value.fillStyle = "#e4e4ea";
+            ctx.value.fillText(node.inputSockets[i - 1].label, x + node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
+
+            Vue.set(node.inputSockets[i - 1], 'x', x);
+            Vue.set(node.inputSockets[i - 1], 'y', y);
+        }
+
+        // draw outputs
+        for (let i = 1; i <= node.outputSockets.length; i++) {
+            const x = node.x + node.width;
+            const y = node.y + (i * node.socketSpacing) + node.headerHeight;
+            const socket = node.outputSockets[i-1];
+
+            ctx.value.beginPath();
+            ctx.value.arc(x, y, node.socketRadius, 0, 2 * Math.PI);
+            ctx.value.fillStyle = socket.colorOut;
+            ctx.value.fill();
+            ctx.value.strokeStyle = socket.stroke;
+            ctx.value.lineWidth = 2;
+            ctx.value.stroke();
+            ctx.value.closePath();
+
+            ctx.value.textAlign = "right";
+            ctx.value.font = '14px Courier New';
+            ctx.value.fillStyle = "#e4e4ea";
+            ctx.value.fillText(node.outputSockets[i - 1].label, x - node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
+
+            Vue.set(node.outputSockets[i - 1], 'x', x);
+            Vue.set(node.outputSockets[i - 1], 'y', y);
+        }
+    };
+
+
     return {
-        isInsideSocket
+        isInsideSocket,
+        drawSocket
     }
 }

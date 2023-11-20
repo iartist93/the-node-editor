@@ -1,14 +1,12 @@
 <script setup lang="ts">
 
-import {computed, onBeforeUnmount, onMounted, reactive, ref} from "vue";
-import {type ReactiveVariable} from "vue/macros";
+import {onBeforeUnmount, onMounted, reactive, ref} from "vue";
 
 import {useCanvas} from "@/canvas";
 import {type NodeType, useNode, useNodeUtils} from "@/node";
 import {type SocketType, useSocket, useSocketUtils} from "@/socket";
 import {useConnection, useConnectionUtils} from "@/connection";
 import {useMouse} from "@/mouse";
-
 
 // track mouse events
 let isDragging = ref(false);
@@ -21,7 +19,13 @@ let offsetY = ref(0);
 const activeNodes: NodeType[] = reactive([]);
 const selectedSockets: SocketType[] = reactive([]);
 
+// array of hover sockets
+const hoverNodes: NodeType[] = reactive([]);
+const hoverSockets: SocketType[] = reactive([]);
+
+
 const DEFAULT_STROKE = "gray";
+const DEFAULT_SOCKET_STROKE = "$24232c";
 const SELECTED_STROKE = "yellow";
 
 //====================================================
@@ -29,13 +33,15 @@ const SELECTED_STROKE = "yellow";
 //====================================================
 
 const {initNode, isInsideNode, drawNode} = useNodeUtils();
-const {isInsideSocket} = useSocketUtils();
+const {isInsideSocket, drawSocket} = useSocketUtils();
 const {drawConnection} = useConnectionUtils();
 
+// node 1 sockets
 const {socket: socket1_i1} = useSocket({name: "x", label: "x", node: this});
 const {socket: socket1_i2} = useSocket({name: "y", label: "y", node: this});
 const {socket: socket1_o1} = useSocket({name: "sum", label: "sum", node: this});
 
+// node 2 sockets
 const {socket: socket2_i1} = useSocket({name: "x", label: "x", node: this});
 const {socket: socket2_i2} = useSocket({name: "y", label: "y", node: this});
 const {socket: socket2_i3} = useSocket({name: "z", label: "z", node: this});
@@ -43,6 +49,7 @@ const {socket: socket2_i4} = useSocket({name: "w", label: "w", node: this});
 const {socket: socket2_o1} = useSocket({name: "sum", label: "sum", node: this});
 const {socket: socket2_o2} = useSocket({name: "add", label: "add", node: this});
 
+// node 3 sockets
 const {socket: socket3_i1} = useSocket({name: "x", label: "x", node: this});
 const {socket: socket3_i2} = useSocket({name: "y", label: "y", node: this});
 const {socket: socket3_o1} = useSocket({name: "add", label: "add", node: this});
@@ -93,7 +100,6 @@ const {connection: connection2} = useConnection(
     node3.inputSockets[0],
 )
 
-
 let allNodes = [node1, node2, node3];
 let allConnections = [connection1, connection2];
 
@@ -110,7 +116,10 @@ const {canvas, ctx, renderEditor} = useCanvas();
 const repaintEditor = () => {
   renderEditor();
   allNodes.forEach(initNode);
-  allNodes.forEach(node => drawNode(ctx, node));
+  allNodes.forEach(node => {
+    drawNode(ctx, node);
+    drawSocket(ctx, node);
+  });
   allConnections.forEach(connection => drawConnection(ctx, connection));
 }
 
@@ -132,6 +141,57 @@ const deactivateSelectedNode = () => {
 //====================================================
 // Build the mouse events
 //====================================================
+
+const removeHoverHighlight = () => {
+  if (hoverNodes[0]) {
+    hoverNodes[0].stroke = DEFAULT_STROKE;
+    hoverNodes.pop();
+  }
+  if (hoverSockets[0]) {
+    hoverSockets[0].stroke = DEFAULT_STROKE;
+    hoverSockets.pop();
+  }
+  repaintEditor();
+}
+
+const addHoverHighlight = () => {
+  if (hoverSockets[0]) {
+    hoverSockets[0].stroke = SELECTED_STROKE;
+  } else if (hoverNodes[0]) {
+    hoverNodes[0].stroke = SELECTED_STROKE;
+  }
+  repaintEditor();
+}
+
+const checkHover = (event: MouseEvent) => {
+  // clean hover array first
+  hoverNodes.pop();
+  hoverSockets.pop();
+
+  const x = event.offsetX;
+  const y = event.offsetY;
+
+  allNodes.forEach((node) => {
+
+    if (isInsideNode(node, x, y)) {
+      hoverNodes[0] = node;
+
+      node.outputSockets.forEach(socket => {
+        if (isInsideSocket(node, socket, x, y)) {
+          hoverSockets[0] = socket;
+        }
+      })
+
+      node.inputSockets.forEach(socket => {
+        if (isInsideSocket(node, socket, x, y)) {
+          hoverSockets[0] = socket;
+        }
+      })
+    }
+  })
+  console.log("============> Hover check ", hoverNodes[0], hoverSockets[0]);
+}
+
 
 const onMouseDown = (event: MouseEvent) => {
   deactivateSelectedNode();
@@ -170,11 +230,21 @@ const onMouseDown = (event: MouseEvent) => {
 };
 
 const onMouseMove = (event: MouseEvent) => {
+  removeHoverHighlight();
+
+  checkHover(event);
+
+  const x = event.offsetX;
+  const y = event.offsetY;
+
   if (isDragging.value) {
     activeNodes[0].x = event.offsetX - offsetX.value;
     activeNodes[0].y = event.offsetY - offsetY.value;
     repaintEditor()
   }
+
+  addHoverHighlight();
+
 };
 
 const onMouseUp = (event: MouseEvent) => {

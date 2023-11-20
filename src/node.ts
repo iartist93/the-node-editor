@@ -17,9 +17,6 @@ export interface NodeType {
     borderRadius: number;
     draggable: boolean;
     socketRadius: number;
-    socketColor: string;
-    socketColorIn: string;
-    socketColorOut: string;
     inputs: number;
     outputs: number;
     socketSpacing: number;
@@ -55,9 +52,6 @@ export const useNode = (newNode?: Partial<NodeType>): useNodeType => {
         borderRadius: 10,
         draggable: true,
         socketRadius: 10,
-        socketColor: "gray",
-        socketColorIn: "#ad89b5",
-        socketColorOut: "#f7aa69",
         inputs: 2,
         outputs: 5,
         socketSpacing: 50,
@@ -132,52 +126,6 @@ export const useNodeUtils = (): useNodeUtilsType => {
 
         // reset alpha
         ctx.value.globalAlpha = 1.0;
-
-        // draw inputs
-        for (let i = 1; i <= node.inputSockets.length; i++) {
-            const x = node.x;
-            const y = node.y + (i * node.socketSpacing) + node.headerHeight;
-
-            ctx.value.beginPath();
-            ctx.value.arc(x, y, node.socketRadius, 0, 2 * Math.PI);
-            ctx.value.fillStyle = node.socketColorIn;
-            ctx.value.fill();
-            ctx.value.strokeStyle = "#24232c";
-            ctx.value.lineWidth = 2;
-            ctx.value.stroke();
-            ctx.value.closePath();
-
-            ctx.value.textAlign = "left";
-            ctx.value.font = '14px Courier New';
-            ctx.value.fillStyle = "#e4e4ea";
-            ctx.value.fillText(node.inputSockets[i - 1].label, x + node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
-
-            Vue.set(node.inputSockets[i - 1], 'x', x);
-            Vue.set(node.inputSockets[i - 1], 'y', y);
-        }
-
-        // draw outputs
-        for (let i = 1; i <= node.outputSockets.length; i++) {
-            const x = node.x + node.width;
-            const y = node.y + (i * node.socketSpacing) + node.headerHeight;
-
-            ctx.value.beginPath();
-            ctx.value.arc(x, y, node.socketRadius, 0, 2 * Math.PI);
-            ctx.value.fillStyle = node.socketColorOut;
-            ctx.value.fill();
-            ctx.value.strokeStyle = "#24232c";
-            ctx.value.lineWidth = 2;
-            ctx.value.stroke();
-            ctx.value.closePath();
-
-            ctx.value.textAlign = "right";
-            ctx.value.font = '14px Courier New';
-            ctx.value.fillStyle = "#e4e4ea";
-            ctx.value.fillText(node.outputSockets[i - 1].label, x - node.socketRadius * 1.5, y + node.socketRadius / 2, 500);
-
-            Vue.set(node.outputSockets[i - 1], 'x', x);
-            Vue.set(node.outputSockets[i - 1], 'y', y);
-        }
     };
 
     return {

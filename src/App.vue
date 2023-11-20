@@ -17,7 +17,7 @@ let offsetY = ref(0);
 // TODO: This should be an array of selected nodes
 // active dragged node
 const activeNodes: NodeType[] = reactive([]);
-const selectedSockets: SocketType[] = reactive([]);
+const activeSockets: SocketType[] = reactive([]);
 
 // array of hover sockets
 const hoverNodes: NodeType[] = reactive([]);
@@ -135,6 +135,10 @@ const deactivateSelectedNode = () => {
     activeNodes[0].stroke = DEFAULT_STROKE;
     activeNodes.pop();
   }
+  if (activeSockets[0]) {
+    activeSockets[0].stroke = DEFAULT_STROKE;
+    activeSockets.pop();
+  }
   repaintEditor();
 }
 
@@ -189,7 +193,7 @@ const checkHover = (event: MouseEvent) => {
       })
     }
   })
-  console.log("============> Hover check ", hoverNodes[0], hoverSockets[0]);
+  // console.log("============> Hover check ", hoverNodes[0], hoverSockets[0]);
 }
 
 
@@ -203,24 +207,26 @@ const onMouseDown = (event: MouseEvent) => {
     if (isInsideNode(node, x, y)) {
       node.outputSockets.forEach(socket => {
         if (isInsideSocket(node, socket, x, y)) {
-          selectedSockets[0] = socket;
+          activeSockets[0] = socket;
         }
       })
 
       node.inputSockets.forEach(socket => {
         if (isInsideSocket(node, socket, x, y)) {
-          selectedSockets[0] = socket;
+          activeSockets[0] = socket;
         }
       })
 
-      if (selectedSockets[0]) {
-        console.log("-----------> selected socket ", selectedSockets[0].name);
+      if (activeSockets[0]) {
+        // console.log("-----------> selected socket ", activeSockets[0].name);
+      } else {
+        isDragging.value = true;
+        activeNodes[0] = node;
+        offsetX.value = x - node.x;
+        offsetY.value = y - node.y;
       }
 
-      isDragging.value = true;
-      activeNodes[0] = node;
-      offsetX.value = x - node.x;
-      offsetY.value = y - node.y;
+      console.log("[[ Down ]] ", activeSockets[0]);
     }
   })
 
@@ -244,11 +250,12 @@ const onMouseMove = (event: MouseEvent) => {
   }
 
   addHoverHighlight();
-
 };
 
 const onMouseUp = (event: MouseEvent) => {
   isDragging.value = false;
+
+  console.log("[[  up ]] = ", hoverSockets[0]);
 };
 
 const onMouseEnter = (event: MouseEvent) => {

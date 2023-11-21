@@ -8,11 +8,11 @@ interface useMouseType {
 
 export const useMouse = (
     canvas: Ref<HTMLCanvasElement | null>,
-    onMouseUp: (event: MouseEvent) => void,
-    onMouseDown: (event: MouseEvent) => void,
-    onMouseMove: (event: MouseEvent) => void,
-    onMouseEnter: (event: MouseEvent) => void,
-    onMouseLeave: (event: MouseEvent) => void
+    onMouseUp?: (event: MouseEvent) => void,
+    onMouseDown?: (event: MouseEvent) => void,
+    onMouseMove?: (event: MouseEvent) => void,
+    onMouseEnter?: (event: MouseEvent) => void,
+    onMouseLeave?: (event: MouseEvent) => void
 ): useMouseType => {
     const x = ref(0);
     const y = ref(0);
@@ -20,23 +20,33 @@ export const useMouse = (
     const onMouseDownEvent = (event: MouseEvent) => {
         x.value = event.offsetX;
         y.value = event.offsetY;
-        onMouseDown(event);
+        if(onMouseDown) {
+            onMouseDown(event);
+        }
     };
 
     const onMouseMoveEvent = (event: MouseEvent) => {
-        onMouseMove(event);
+        if(onMouseMove) {
+            onMouseMove(event);
+        }
     };
 
     const onMouseUpEvent = (event: MouseEvent) => {
-        onMouseUp(event);
+        if(onMouseUp) {
+            onMouseUp(event);
+        }
     };
 
     const onMouseEnterEvent = (event: MouseEvent) => {
-        onMouseEnter(event);
+        if(onMouseEnter) {
+            onMouseEnter(event);
+        }
     };
 
     const onMouseLeaveEvent = (event: MouseEvent) => {
-        onMouseLeave(event);
+        if(onMouseLeave) {
+            onMouseLeave(event);
+        }
     };
 
     const registerMouseEvents = () => {
@@ -47,7 +57,6 @@ export const useMouse = (
         canvas.value.addEventListener('mouseenter', onMouseEnterEvent);
         canvas.value.addEventListener('mouseleave', onMouseLeaveEvent);
     }
-
 
     const unregisterMouseEvents = () => {
         if (!canvas.value) return;

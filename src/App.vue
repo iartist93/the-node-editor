@@ -2,11 +2,12 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 import { useCanvas } from '@/canvas'
-import { addNewSocket, drawNode, isMouseInsideNode, type NodeType, useNode } from '@/node'
+import { drawNode, isMouseInsideNode, type NodeType } from '@/node'
 import { addConnectionToSocket, inMouseInsideSocket, type SocketType } from '@/socket'
 import { drawConnection, useConnection } from '@/connection'
 import { useMouse } from '@/mouse'
 import { useEditorStore } from '@/stores'
+import { useScene } from '@/scene'
 
 // track mouse events
 let isDragging = ref(false)
@@ -30,136 +31,8 @@ const hoverSockets: SocketType[] = reactive([])
 const DEFAULT_STROKE = 'gray'
 const SELECTED_STROKE = 'yellow'
 
-const { allNodes, allConnections, addNode, addConnection, getSocket, getConnection, getNode } =
-  useEditorStore()
-
-// --------------------------
-// node 1
-//---------------------------
-
-const node1 = useNode({
-  x: 47,
-  y: 285,
-  name: 'Sum'
-})
-
-addNewSocket(node1, {
-  name: 'x',
-  label: 'x',
-  type: 'input'
-})
-
-addNewSocket(node1, {
-  name: 'y',
-  label: 'y',
-  type: 'input'
-})
-
-addNewSocket(node1, {
-  name: 'sum',
-  label: 'sum',
-  type: 'output'
-})
-
-// --------------------------
-// node 2
-//---------------------------
-
-const node2 = useNode({
-  x: 600,
-  y: 340,
-  name: 'Math'
-})
-
-// add sockets to node 2
-addNewSocket(node2, {
-  name: 'x',
-  label: 'x',
-  type: 'input'
-})
-
-addNewSocket(node2, {
-  name: 'y',
-  label: 'y',
-  type: 'input'
-})
-
-addNewSocket(node2, {
-  name: 'z',
-  label: 'z',
-  type: 'input'
-})
-
-addNewSocket(node2, {
-  name: 'w',
-  label: 'w',
-  type: 'input'
-})
-
-addNewSocket(node2, {
-  name: 'sum',
-  label: 'sum',
-  type: 'output'
-})
-
-addNewSocket(node2, {
-  name: 'add',
-  label: 'add',
-  type: 'output'
-})
-
-// --------------------------
-// node 2
-//---------------------------
-
-const node3 = useNode({
-  x: 606,
-  y: 82,
-  name: 'Add'
-})
-
-addNewSocket(node3, {
-  name: 'x',
-  label: 'x',
-  type: 'input'
-})
-
-addNewSocket(node3, {
-  name: 'y',
-  label: 'y',
-  type: 'input'
-})
-
-addNewSocket(node3, {
-  name: 'add',
-  label: 'add',
-  type: 'output'
-})
-
-//---------------------------
-// add all nodes to the main editor store
-
-addNode(node1)
-addNode(node2)
-addNode(node3)
-
-//---------------------------
-// connection 1
-//---------------------------
-
-const connection1 = useConnection(node1.outputSocketIds[0], node2.inputSocketIds[0])
-
-//---------------------------
-// connection 2
-//---------------------------
-
-const connection2 = useConnection(node1.outputSocketIds[0], node3.inputSocketIds[0])
-
-//---------------------------
-
-// add all connection to the store
-addConnection(connection1)
-addConnection(connection2)
+useScene()
+const { allNodes, allConnections, getSocket } = useEditorStore()
 
 //====================================================
 // Build the canvas

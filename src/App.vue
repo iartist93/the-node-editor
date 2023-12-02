@@ -2,10 +2,11 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 import { useCanvas } from '@/canvas'
-import { useNode, type useNodeType } from '@/node'
-import { type SocketType, useSocket, useSocketUtils } from '@/socket'
-import { useConnection, useConnectionUtils } from '@/connection'
+import { addNewSocket, drawNode, isMouseInsideNode, type NodeType, useNode } from '@/node'
+import { inMouseInsideSocket, type SocketType } from '@/socket'
+import { drawConnection, useConnection } from '@/connection'
 import { useMouse } from '@/mouse'
+import { useEditorStore } from '@/stores'
 
 // track mouse events
 let isDragging = ref(false)
@@ -18,87 +19,146 @@ let mouseY = ref(0)
 let hasNewConnectionActive = ref(false)
 
 // track active/hover nodes
-const activeNodes: useNodeType[] = reactive([])
-const hoverNodes: useNodeType[] = reactive([])
+const activeNodes: NodeType[] = reactive([])
+const hoverNodes: NodeType[] = reactive([])
 
 // track active/hover sockets
 const activeSockets: SocketType[] = reactive([])
 const hoverSockets: SocketType[] = reactive([])
 
 const DEFAULT_STROKE = 'gray'
-const DEFAULT_SOCKET_STROKE = '$24232c'
 const SELECTED_STROKE = 'yellow'
 
-//====================================================
-// Build the editor nodes, sockets, connections
-//====================================================
+const { allNodes, allConnections, addNode, addConnection, getSocket, getConnection, getNode } =
+  useEditorStore()
 
-const { isInsideSocket, drawSocket, connectToNode } = useSocketUtils()
-const { drawConnection } = useConnectionUtils()
-
-// node 1 sockets
-const { socket: socket1_i1 } = useSocket({ name: 'x', label: 'x', nodeId: 1 })
-const { socket: socket1_i2 } = useSocket({ name: 'y', label: 'y', nodeId: 1 })
-const { socket: socket1_o1 } = useSocket({ name: 'sum', label: 'sum', nodeId: 1 })
-
-// node 2 sockets
-const { socket: socket2_i1 } = useSocket({ name: 'x', label: 'x', nodeId: 2 })
-const { socket: socket2_i2 } = useSocket({ name: 'y', label: 'y', nodeId: 2 })
-const { socket: socket2_i3 } = useSocket({ name: 'z', label: 'z', nodeId: 2 })
-const { socket: socket2_i4 } = useSocket({ name: 'w', label: 'w', nodeId: 2 })
-const { socket: socket2_o1 } = useSocket({ name: 'sum', label: 'sum', nodeId: 2 })
-const { socket: socket2_o2 } = useSocket({ name: 'add', label: 'add', nodeId: 2 })
-
-// node 3 sockets
-const { socket: socket3_i1 } = useSocket({ name: 'x', label: 'x', nodeId: 3 })
-const { socket: socket3_i2 } = useSocket({ name: 'y', label: 'y', nodeId: 3 })
-const { socket: socket3_o1 } = useSocket({ name: 'add', label: 'add', nodeId: 3 })
+// --------------------------
+// node 1
+//---------------------------
 
 const node1 = useNode({
-  id: 1,
   x: 47,
   y: 285,
-  name: 'Sum',
-  inputSockets: [socket1_i1, socket1_i2],
-  outputSockets: [socket1_o1]
+  name: 'Sum'
 })
+
+addNewSocket(node1, {
+  name: 'x',
+  label: 'x',
+  type: 'input'
+})
+
+addNewSocket(node1, {
+  name: 'y',
+  label: 'y',
+  type: 'input'
+})
+
+addNewSocket(node1, {
+  name: 'sum',
+  label: 'sum',
+  type: 'output'
+})
+
+// --------------------------
+// node 2
+//---------------------------
 
 const node2 = useNode({
-  id: 2,
   x: 600,
   y: 340,
-  name: 'Math',
-  inputSockets: [socket2_i1, socket2_i2, socket2_i3, socket2_i4],
-  outputSockets: [socket2_o1, socket2_o2]
+  name: 'Math'
 })
+
+// add sockets to node 2
+addNewSocket(node2, {
+  name: 'x',
+  label: 'x',
+  type: 'input'
+})
+
+addNewSocket(node2, {
+  name: 'y',
+  label: 'y',
+  type: 'input'
+})
+
+addNewSocket(node2, {
+  name: 'z',
+  label: 'z',
+  type: 'input'
+})
+
+addNewSocket(node2, {
+  name: 'w',
+  label: 'w',
+  type: 'input'
+})
+
+addNewSocket(node2, {
+  name: 'sum',
+  label: 'sum',
+  type: 'output'
+})
+
+addNewSocket(node2, {
+  name: 'add',
+  label: 'add',
+  type: 'output'
+})
+
+// --------------------------
+// node 2
+//---------------------------
 
 const node3 = useNode({
-  id: 3,
   x: 606,
   y: 82,
-  name: 'Add',
-  inputSockets: [socket3_i1, socket3_i2],
-  outputSockets: [socket2_o1]
+  name: 'Add'
 })
 
-const { connection: connection1 } = useConnection(
-  1,
-  node1.value.outputSockets[0],
-  node2.value.inputSockets[0],
-  mouseX,
-  mouseY
-)
+addNewSocket(node3, {
+  name: 'x',
+  label: 'x',
+  type: 'input'
+})
 
-const { connection: connection2 } = useConnection(
-  2,
-  node1.value.outputSockets[0],
-  node3.value.inputSockets[0],
-  mouseX,
-  mouseY
-)
+addNewSocket(node3, {
+  name: 'y',
+  label: 'y',
+  type: 'input'
+})
 
-let allNodes = [node1, node2, node3]
-let allConnections = [connection1, connection2]
+addNewSocket(node3, {
+  name: 'add',
+  label: 'add',
+  type: 'output'
+})
+
+//---------------------------
+// add all nodes to the main editor store
+
+addNode(node1)
+addNode(node2)
+addNode(node3)
+
+//---------------------------
+// connection 1
+//---------------------------
+
+const connection1 = useConnection(node1.outputSocketIds[0], node2.inputSocketIds[0], mouseX, mouseY)
+
+//---------------------------
+// connection 2
+//---------------------------
+
+const connection2 = useConnection(node1.outputSocketIds[0], node3.inputSocketIds[0], mouseX, mouseY)
+
+//---------------------------
+
+// add all connection to the store
+addConnection(connection1)
+addConnection(connection2)
 
 //====================================================
 // Build the canvas
@@ -112,24 +172,41 @@ const { canvas, ctx, renderEditor } = useCanvas()
 
 const repaintEditor = () => {
   renderEditor()
-  allNodes.forEach((node) => node.init())
-  allNodes.forEach((node) => {
-    node.draw(ctx)
-    drawSocket(ctx, node.value)
-  })
-  allConnections.forEach((connection) => drawConnection(ctx, connection))
+
+  // draw all nodes
+  for (const nodeId in allNodes) {
+    const node = allNodes[nodeId]
+    drawNode(ctx, node)
+  }
+
+  // draw all connections
+  for (const connectionId in allConnections) {
+    const connection = allConnections[connectionId]
+    drawConnection(ctx, connection)
+  }
+}
+
+/**
+ * push the node to the end of the array
+ * @param node
+ */
+const pushNodeToEnd = (node: NodeType) => {
+  const index = allNodes.indexOf(node)
+  if (index > -1) {
+    allNodes.splice(index, 1)
+    allNodes.push(node)
+  }
 }
 
 const activateSelectedNode = () => {
-  activeNodes[0].value.stroke = SELECTED_STROKE
-  allNodes = allNodes.filter((node) => node.value.id !== activeNodes[0].value.id)
-  allNodes.push(activeNodes[0])
+  activeNodes[0].stroke = SELECTED_STROKE
+  pushNodeToEnd(activeNodes[0])
   repaintEditor()
 }
 
 const deactivateSelectedNode = () => {
   if (activeNodes[0]) {
-    activeNodes[0].value.stroke = DEFAULT_STROKE
+    activeNodes[0].stroke = DEFAULT_STROKE
     activeNodes.pop()
   }
   if (activeSockets[0]) {
@@ -145,7 +222,7 @@ const deactivateSelectedNode = () => {
 
 const removeHoverHighlight = () => {
   if (hoverNodes[0]) {
-    hoverNodes[0].value.stroke = DEFAULT_STROKE
+    hoverNodes[0].stroke = DEFAULT_STROKE
     hoverNodes.pop()
   }
   if (hoverSockets[0]) {
@@ -159,7 +236,7 @@ const addHoverHighlight = () => {
   if (hoverSockets[0]) {
     hoverSockets[0].stroke = SELECTED_STROKE
   } else if (hoverNodes[0]) {
-    hoverNodes[0].value.stroke = SELECTED_STROKE
+    hoverNodes[0].stroke = SELECTED_STROKE
   }
   repaintEditor()
 }
@@ -173,17 +250,19 @@ const checkHover = (event: MouseEvent) => {
   const y = event.offsetY
 
   allNodes.forEach((node) => {
-    if (node.isMouseInside(x, y)) {
+    if (isMouseInsideNode(node, x, y)) {
       hoverNodes[0] = node
 
-      node.value.outputSockets.forEach((socket) => {
-        if (isInsideSocket(node.value, socket, x, y)) {
+      node.outputSocketIds.forEach((socketId) => {
+        const socket = getSocket(socketId)
+        if (inMouseInsideSocket(socket, x, y)) {
           hoverSockets[0] = socket
         }
       })
 
-      node.value.inputSockets.forEach((socket) => {
-        if (isInsideSocket(node.value, socket, x, y)) {
+      node.inputSocketIds.forEach((socketId) => {
+        const socket = getSocket(socketId)
+        if (inMouseInsideSocket(socket, x, y)) {
           hoverSockets[0] = socket
         }
       })
@@ -192,7 +271,7 @@ const checkHover = (event: MouseEvent) => {
   // console.log("============> Hover check ", hoverNodes[0], hoverSockets[0]);
 }
 
-const removeConnection = () => {
+const removeDraggedConnection = () => {
   allConnections.pop()
   hasNewConnectionActive.value = false
   repaintEditor()
@@ -202,14 +281,12 @@ const attachConnection = () => {
   console.log('=========> attach to ', hoverSockets[0])
   const connection = allConnections[allConnections.length - 1]
   connection.value.targetToMouse = false
-  connection.value.outputSocket = hoverSockets[0]
+  connection.value.outputSocketId = hoverSockets[0].id
   hasNewConnectionActive.value = false
   repaintEditor()
 }
 
 const onMouseDown = (event: MouseEvent) => {
-  console.log('==========> socket 1 ', socket1_i1)
-
   deactivateSelectedNode()
 
   const x = event.offsetX
@@ -219,21 +296,23 @@ const onMouseDown = (event: MouseEvent) => {
     if (hoverSockets[0]) {
       attachConnection()
     } else {
-      removeConnection()
+      removeDraggedConnection()
     }
     return
   }
 
   allNodes.forEach((node) => {
-    if (node.isMouseInside(x, y)) {
-      node.value.outputSockets.forEach((socket) => {
-        if (isInsideSocket(node.value, socket, x, y)) {
+    if (isMouseInsideNode(node, x, y)) {
+      node.outputSocketIds.forEach((socketId) => {
+        const socket = getSocket(socketId)
+        if (inMouseInsideSocket(socket, x, y)) {
           activeSockets[0] = socket
         }
       })
 
-      node.value.inputSockets.forEach((socket) => {
-        if (isInsideSocket(node.value, socket, x, y)) {
+      node.inputSocketIds.forEach((socketId) => {
+        const socket = getSocket(socketId)
+        if (inMouseInsideSocket(socket, x, y)) {
           activeSockets[0] = socket
         }
       })
@@ -241,14 +320,14 @@ const onMouseDown = (event: MouseEvent) => {
       if (activeSockets[0]) {
         // console.log("-----------> selected socket ", activeSockets[0].name);
         hasNewConnectionActive.value = true
-        const { connection } = useConnection(3, activeSockets[0], null, mouseX, mouseY, true)
+        const connection = useConnection(activeSockets[0].id, null, mouseX, mouseY, true)
         connection.value.targetToMouse = true
         allConnections.push(connection)
       } else {
         isDragging.value = true
         activeNodes[0] = node
-        offsetX.value = x - node.value.x
-        offsetY.value = y - node.value.y
+        offsetX.value = x - node.x
+        offsetY.value = y - node.y
       }
       console.log('[[ Down ]] sockets ', activeSockets[0])
       console.log('[[ Down ]] nodes ', activeNodes[0])
@@ -272,8 +351,8 @@ const onMouseMove = (event: MouseEvent) => {
   const y = event.offsetY
 
   if (isDragging.value) {
-    activeNodes[0].value.x = event.offsetX - offsetX.value
-    activeNodes[0].value.y = event.offsetY - offsetY.value
+    activeNodes[0].x = event.offsetX - offsetX.value
+    activeNodes[0].y = event.offsetY - offsetY.value
     repaintEditor()
   }
 

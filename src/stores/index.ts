@@ -1,14 +1,13 @@
 import { type NodeType } from '@/node'
 import { type SocketType } from '@/socket'
 import { type ConnectionType } from '@/connection'
-import { type ComputedRef } from 'vue'
 
 import { defineStore } from 'pinia'
 
 export type RootState = {
   allNodes: NodeType[]
   allSockets: SocketType[]
-  allConnections: ComputedRef<ConnectionType>[]
+  allConnections: ConnectionType[]
 }
 
 export const useEditorStore = defineStore({
@@ -27,7 +26,7 @@ export const useEditorStore = defineStore({
     addSocket(socket: SocketType) {
       this.allSockets.push(socket)
     },
-    addConnection(connection: ComputedRef<ConnectionType>) {
+    addConnection(connection: ConnectionType) {
       this.allConnections.push(connection)
     },
 
@@ -38,8 +37,8 @@ export const useEditorStore = defineStore({
     getSocket(socketId: string): SocketType {
       return this.allSockets.filter((socket) => socket.id === socketId)[0]
     },
-    getConnection(connectionId: string): ComputedRef<ConnectionType> {
-      return this.allConnections.filter((connection) => connection.value.id === connectionId)[0]
+    getConnection(connectionId: string): ConnectionType {
+      return this.allConnections.filter((connection) => connection.id === connectionId)[0]
     },
 
     removeNode(nodeId: string) {
@@ -49,7 +48,7 @@ export const useEditorStore = defineStore({
       this.allSockets.filter((socket) => socket.id !== socketId)
     },
     removeConnection(connectionId: string) {
-      this.allConnections.filter((connection) => connection.value.id !== connectionId)
+      this.allConnections.filter((connection) => connection.id !== connectionId)
     }
   }
 })

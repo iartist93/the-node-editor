@@ -70,13 +70,25 @@ export const inMouseInsideSocket = (socket: SocketType | string, x: number, y: n
   )
 }
 
-const addConnectionToSocket = (socket: SocketType, connectionId: string) => {
+export const addConnectionToSocket = (socket: SocketType, connectionId: string) => {
   // input socket should have only one connection                                                                                                                                                                                      nection to it
   if (socket.type === 'input') {
     socket.connections[0] = connectionId
   } else {
     socket.connections.push(connectionId)
   }
+
+  console.log('$$ Socket : ', socket)
+  console.log('$$ connection : ', useEditorStore().getConnection(connectionId))
+}
+
+/**
+ * Remove connection from socket
+ * @param socket
+ * @param connectionId
+ */
+export const removeConnectionFromSocket = (socket: SocketType, connectionId: string) => {
+  socket.connections = socket.connections.filter((connection) => connection !== connectionId)
 }
 
 /**

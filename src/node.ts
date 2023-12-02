@@ -151,7 +151,6 @@ export const addNewSocket = (node: NodeType, newSocket: Partial<SocketType>) => 
     node.inputSocketIds.push(socket.id)
     socket.index = node.inputs
     node.inputs = node.inputs + 1
-    console.log(node.id, node.inputSocketIds.length)
   } else {
     node.outputSocketIds.push(socket.id)
     socket.index = node.outputs

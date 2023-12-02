@@ -1,36 +1,30 @@
-import { computed, type ComputedRef, type Ref } from 'vue'
+import { reactive, type Ref } from 'vue'
 import { useEditorStore } from '@/stores'
 import { nanoid } from 'nanoid'
+import { addConnectionToSocket, removeConnectionFromSocket, type SocketType } from '@/socket'
+import { type MousePosition } from '@/mouse'
 
 export interface ConnectionType {
   id: string
-  inputSocketId: string
+  inputSocketId: string | null
   outputSocketId: string | null
-  mouseX: Ref<number>
-  mouseY: Ref<number>
-  targetToMouse: boolean
 }
 
 export const useConnection = (
   inputSocketId: string,
-  outputSocketId: string | null,
-  mouseX: Ref<number>,
-  mouseY: Ref<number>,
-  targetToMouse: boolean = false
-): ComputedRef<ConnectionType> => {
-  return computed(() => ({
+  outputSocketId: string | null
+): ConnectionType => {
+  return reactive<ConnectionType>({
     id: nanoid(),
     inputSocketId,
-    outputSocketId,
-    mouseX,
-    mouseY,
-    targetToMouse
-  }))
+    outputSocketId
+  })
 }
 
 export const drawConnection = (
   ctx: Ref<CanvasRenderingContext2D | null>,
-  connection: ComputedRef<ConnectionType>
+  connection: ConnectionType,
+  mouse: MousePosition
 ) => {
   if (!ctx.value) {
     console.error('You must provide CanvasRenderingContext2D')
@@ -38,25 +32,17 @@ export const drawConnection = (
   }
 
   const store = useEditorStore()
-  const inputSocket = store.getSocket(connection.value.inputSocketId)
 
-  // check if the connection is from socket or mouse
-  const outputSocket = connection.value.outputSocketId
-    ? store.getSocket(connection.value.outputSocketId)
-    : null
+  const inputSocket = connection.inputSocketId ? store.getSocket(connection.inputSocketId) : null
+  const outputSocket = connection.outputSocketId ? store.getSocket(connection.outputSocketId) : null
+  const targetToMouse = !connection.inputSocketId || !connection.outputSocketId
 
-  let sourceX = inputSocket.x
-  let sourceY = inputSocket.y
-  let targetX = 0
-  let targetY = 0
+  let sourceX = inputSocket ? inputSocket.x : targetToMouse ? mouse.x : 0
+  let sourceY = inputSocket ? inputSocket.y : targetToMouse ? mouse.y : 0
+  let targetX = outputSocket ? outputSocket.x : targetToMouse ? mouse.x : 0
+  let targetY = outputSocket ? outputSocket.y : targetToMouse ? mouse.y : 0
 
-  if (connection.value.targetToMouse) {
-    targetX = connection.value.mouseX.value
-    targetY = connection.value.mouseY.value
-  } else {
-    targetX = outputSocket?.x || 0
-    targetY = outputSocket?.y || 0
-  }
+  console.log('$$ Draw Connection ', mouse)
 
   // control points
   const cp1X = sourceX + (targetX - sourceX) * (5 / 10)
@@ -71,4 +57,42 @@ export const drawConnection = (
   ctx.value.strokeStyle = 'white'
   ctx.value.stroke()
   ctx.value.closePath()
+}
+
+const startConnection = (connection: ConnectionType, socket: SocketType) => {
+  const socketId = socket.id
+
+  if (socket.type === 'input') {
+    connection.outputSocketId = socketId
+    connection.inputSocketId = null
+  } else {
+    connection.inputSocketId = socketId
+    connection.outputSocketId = null
+  }
+}
+
+const addSocketToConnection = (connection: ConnectionType, socket: SocketType) => {
+  const socketId = socket.id
+
+  if (socket.type === 'input') {
+    connection.inputSocketId = socketId
+  } else {
+    connection.outputSocketId = socketId
+  }
+
+  // add connection to the socket
+  addConnectionToSocket(socket, connection.id)
+}
+
+const removeSocketFromConnection = (connection: ConnectionType, socket: SocketType) => {
+  const socketId = socket.id
+
+  if (socket.type === 'input') {
+    connection.inputSocketId = null
+  } else {
+    connection.outputSocketId = null
+  }
+
+  // remove connection from the socket
+  removeConnectionFromSocket(socket, connection.id)
 }

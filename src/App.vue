@@ -3,8 +3,8 @@ import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 import { useCanvas } from '@/canvas'
 import { drawNode, isMouseInsideNode, type NodeType } from '@/node'
-import { addConnectionToSocket, inMouseInsideSocket, type SocketType } from '@/socket'
-import { drawConnection, useConnection } from '@/connection'
+import { inMouseInsideSocket, type SocketType } from '@/socket'
+import { addSocketToConnection, drawConnection, useConnection } from '@/connection'
 import { useMouse } from '@/mouse'
 import { useEditorStore } from '@/stores'
 import { useScene } from '@/scene'
@@ -32,7 +32,7 @@ const DEFAULT_STROKE = 'gray'
 const SELECTED_STROKE = 'yellow'
 
 useScene()
-const { allNodes, allConnections, getSocket } = useEditorStore()
+const { allNodes, allConnections, getSocket, addConnection } = useEditorStore()
 
 //====================================================
 // Build the canvas
@@ -88,6 +88,14 @@ const deactivateSelectedNode = () => {
     activeSockets.pop()
   }
   repaintEditor()
+}
+
+const moveActiveNode = () => {
+  if (isDragging.value) {
+    activeNodes[0].x = mouse.position.x - offsetX.value
+    activeNodes[0].y = mouse.position.y - offsetY.value
+    repaintEditor()
+  }
 }
 
 //====================================================
@@ -172,10 +180,12 @@ const checkActive = () => {
 // function to whether handle active socket or active node
 const handleActive = () => {
   if (activeSockets[0]) {
+    console.log('===========> handle active socket ', activeSockets[0])
     hasNewConnectionActive.value = true
-    const connection = useConnection(activeSockets[0].id, null)
-    allConnections.push(connection)
-    addConnectionToSocket(activeSockets[0], connection.id)
+    const connection = useConnection()
+    addConnection(connection)
+    addSocketToConnection(connection, activeSockets[0])
+    console.log('===========> new connection ', connection)
   } else if (activeNodes[0]) {
     isDragging.value = true
     offsetX.value = mouse.position.x - activeNodes[0].x
@@ -185,8 +195,10 @@ const handleActive = () => {
 }
 
 const attachConnection = () => {
+  console.log('==================> attach connection = ', hoverSockets[0])
   const connection = allConnections[allConnections.length - 1]
-  connection.outputSocketId = hoverSockets[0].id
+  // connection.outputSocketId = hoverSockets[0].id
+  addSocketToConnection(connection, hoverSockets[0])
   hasNewConnectionActive.value = false
   repaintEditor()
 }
@@ -209,6 +221,8 @@ const toggleActiveConnection = () => {
   }
 }
 
+// mouse events all execute some functions
+
 const onMouseDown = (event: MouseEvent) => {
   deactivateSelectedNode()
   if (hasNewConnectionActive.value) {
@@ -220,28 +234,14 @@ const onMouseDown = (event: MouseEvent) => {
 }
 
 const onMouseMove = (event: MouseEvent) => {
-  mouseX.value = event.offsetX
-  mouseY.value = event.offsetY
-
   removeHoverHighlight()
   checkHover(event)
-
-  const x = event.offsetX
-  const y = event.offsetY
-
-  if (isDragging.value) {
-    activeNodes[0].x = event.offsetX - offsetX.value
-    activeNodes[0].y = event.offsetY - offsetY.value
-    repaintEditor()
-  }
-
+  moveActiveNode()
   addHoverHighlight()
 }
 
 const onMouseUp = (event: MouseEvent) => {
   isDragging.value = false
-
-  // console.log('[[  up ]] = ', hoverSockets[0])
 }
 
 const onMouseEnter = (event: MouseEvent) => {

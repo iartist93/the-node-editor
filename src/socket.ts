@@ -77,9 +77,6 @@ export const addConnectionToSocket = (socket: SocketType, connectionId: string) 
   } else {
     socket.connections.push(connectionId)
   }
-
-  console.log('$$ Socket : ', socket)
-  console.log('$$ connection : ', useEditorStore().getConnection(connectionId))
 }
 
 /**
@@ -110,13 +107,20 @@ export const drawSocket = (
 
   let x = 0
   let y = 0
+  let labelX = 0
+  let label = 0
+  let textAlign: CanvasTextAlign = 'left'
 
   if (socket.type === 'input') {
     x = node.x
     y = node.y + (socket.index + 1) * node.socketSpacing + node.headerHeight
+    labelX = x + node.socketRadius * 1.5
+    textAlign = 'left'
   } else {
     x = node.x + node.width
     y = node.y + (socket.index + 1) * node.socketSpacing + node.headerHeight
+    labelX = x - node.socketRadius * 1.5
+    textAlign = 'right'
   }
 
   socket.x = x
@@ -131,8 +135,8 @@ export const drawSocket = (
   ctx.value.stroke()
   ctx.value.closePath()
 
-  ctx.value.textAlign = 'left'
+  ctx.value.textAlign = textAlign
   ctx.value.font = '14px Courier New'
   ctx.value.fillStyle = '#e4e4ea'
-  ctx.value.fillText(socket.label, x + node.socketRadius * 1.5, y + node.socketRadius / 2, 500)
+  ctx.value.fillText(socket.label, labelX, y + node.socketRadius / 2, 500)
 }

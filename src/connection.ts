@@ -11,8 +11,8 @@ export interface ConnectionType {
 }
 
 export const useConnection = (
-  inputSocketId: string,
-  outputSocketId: string | null
+  inputSocketId: string | null = null,
+  outputSocketId: string | null = null
 ): ConnectionType => {
   return reactive<ConnectionType>({
     id: nanoid(),
@@ -35,14 +35,22 @@ export const drawConnection = (
 
   const inputSocket = connection.inputSocketId ? store.getSocket(connection.inputSocketId) : null
   const outputSocket = connection.outputSocketId ? store.getSocket(connection.outputSocketId) : null
-  const targetToMouse = !connection.inputSocketId || !connection.outputSocketId
+  const targetToMouse = connection.inputSocketId === null || !connection.outputSocketId === null
 
   let sourceX = inputSocket ? inputSocket.x : targetToMouse ? mouse.x : 0
   let sourceY = inputSocket ? inputSocket.y : targetToMouse ? mouse.y : 0
   let targetX = outputSocket ? outputSocket.x : targetToMouse ? mouse.x : 0
   let targetY = outputSocket ? outputSocket.y : targetToMouse ? mouse.y : 0
 
-  console.log('$$ Draw Connection ', mouse)
+  // console.log(
+  //   '------------> Draw Connection ',
+  //   targetToMouse,
+  //   connection.inputSocketId,
+  //   connection.outputSocketId
+  // )
+
+  // console.log(connection.id, connection.inputSocketId, connection.outputSocketId, targetToMouse)
+  // console.log(connection.id, targetToMouse, sourceX, sourceY, targetX, targetY)
 
   // control points
   const cp1X = sourceX + (targetX - sourceX) * (5 / 10)
@@ -59,32 +67,33 @@ export const drawConnection = (
   ctx.value.closePath()
 }
 
-const startConnection = (connection: ConnectionType, socket: SocketType) => {
+export const addSocketToConnection = (connection: ConnectionType, socket: SocketType) => {
   const socketId = socket.id
-
-  if (socket.type === 'input') {
-    connection.outputSocketId = socketId
-    connection.inputSocketId = null
-  } else {
-    connection.inputSocketId = socketId
-    connection.outputSocketId = null
-  }
-}
-
-const addSocketToConnection = (connection: ConnectionType, socket: SocketType) => {
-  const socketId = socket.id
+  console.log(
+    'addSocketToConnection before = ',
+    socket.type,
+    connection.inputSocketId,
+    connection.outputSocketId
+  )
 
   if (socket.type === 'input') {
     connection.inputSocketId = socketId
   } else {
     connection.outputSocketId = socketId
   }
+
+  console.log(
+    'addSocketToConnection after = ',
+    socket.type,
+    connection.inputSocketId,
+    connection.outputSocketId
+  )
 
   // add connection to the socket
   addConnectionToSocket(socket, connection.id)
 }
 
-const removeSocketFromConnection = (connection: ConnectionType, socket: SocketType) => {
+export const removeSocketFromConnection = (connection: ConnectionType, socket: SocketType) => {
   const socketId = socket.id
 
   if (socket.type === 'input') {

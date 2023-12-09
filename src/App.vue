@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 import { useCanvas } from '@/canvas'
 import { drawNode, isMouseInsideNode, type NodeType } from '@/node'
@@ -41,10 +41,6 @@ const SELECTED_STROKE = 'yellow'
 
 useScene()
 const editorStore = useEditorStore()
-
-watch(editorStore.allConnections, (value) => {
-  console.log('XXX connections changed: ', value)
-})
 
 //====================================================
 // Build the canvas
@@ -202,7 +198,6 @@ const checkActive = () => {
 const handleActive = () => {
   if (activeSockets[0]) {
     const connection = useConnection()
-    activeConnections[0] = connection
     editorStore.addConnection(connection)
     activeConnections[0] = connection
     addSocketToConnection(connection, activeSockets[0])

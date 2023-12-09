@@ -38,8 +38,8 @@ export const useScene = () => {
   //---------------------------
 
   const node2 = useNode({
-    x: 600,
-    y: 340,
+    x: 900,
+    y: 440,
     name: 'Math'
   })
 
@@ -85,7 +85,7 @@ export const useScene = () => {
   //---------------------------
 
   const node3 = useNode({
-    x: 606,
+    x: 506,
     y: 82,
     name: 'Add'
   })

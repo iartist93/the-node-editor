@@ -1,10 +1,15 @@
 <script lang="ts" setup>
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 import { useCanvas } from '@/canvas'
 import { drawNode, isMouseInsideNode, type NodeType } from '@/node'
 import { inMouseInsideSocket, type SocketType } from '@/socket'
-import { addSocketToConnection, drawConnection, useConnection } from '@/connection'
+import {
+  addSocketToConnection,
+  type ConnectionType,
+  drawConnection,
+  useConnection
+} from '@/connection'
 import { useMouse } from '@/mouse'
 import { useEditorStore } from '@/stores'
 import { useScene } from '@/scene'
@@ -17,12 +22,15 @@ let offsetY = ref(0)
 let mouseX = ref(0)
 let mouseY = ref(0)
 
-// when we create a new connection attached to one socket only but not yet connected to second socket
-let hasNewConnectionActive = ref(false)
-
 // track active/hover nodes
 const activeNodes: NodeType[] = reactive([])
 const hoverNodes: NodeType[] = reactive([])
+const activeConnections: ConnectionType[] = reactive([])
+
+// when we create a new connection attached to one socket only but not yet connected to second socket
+let hasNewConnectionActive = computed(() => {
+  return activeConnections.length > 0
+})
 
 // track active/hover sockets
 const activeSockets: SocketType[] = reactive([])
@@ -32,7 +40,11 @@ const DEFAULT_STROKE = 'gray'
 const SELECTED_STROKE = 'yellow'
 
 useScene()
-const { allNodes, allConnections, getSocket, addConnection } = useEditorStore()
+const editorStore = useEditorStore()
+
+watch(editorStore.allConnections, (value) => {
+  console.log('XXX connections changed: ', value)
+})
 
 //====================================================
 // Build the canvas
@@ -48,14 +60,14 @@ const repaintEditor = () => {
   renderEditor()
 
   // draw all nodes
-  for (const nodeId in allNodes) {
-    const node = allNodes[nodeId]
+  for (const nodeId in editorStore.allNodes) {
+    const node = editorStore.allNodes[nodeId]
     drawNode(ctx, node)
   }
 
   // draw all connections
-  for (const connectionId in allConnections) {
-    const connection = allConnections[connectionId]
+  for (const connectionId in editorStore.allConnections) {
+    const connection = editorStore.allConnections[connectionId]
     drawConnection(ctx, connection, mouse.position)
   }
 }
@@ -65,10 +77,10 @@ const repaintEditor = () => {
  * @param node
  */
 const pushNodeToEnd = (node: NodeType) => {
-  const index = allNodes.indexOf(node)
+  const index = editorStore.allNodes.indexOf(node)
   if (index > -1) {
-    allNodes.splice(index, 1)
-    allNodes.push(node)
+    editorStore.allNodes.splice(index, 1)
+    editorStore.allNodes.push(node)
   }
 }
 
@@ -123,6 +135,10 @@ const addHoverHighlight = () => {
   repaintEditor()
 }
 
+/**
+ * Track the node and socket that the mouse is hovering over
+ * @param event
+ */
 const checkHover = (event: MouseEvent) => {
   // clean hover array first
   hoverNodes.pop()
@@ -131,19 +147,19 @@ const checkHover = (event: MouseEvent) => {
   const x = event.offsetX
   const y = event.offsetY
 
-  allNodes.forEach((node) => {
+  editorStore.allNodes.forEach((node) => {
     if (isMouseInsideNode(node, x, y)) {
       hoverNodes[0] = node
 
       node.outputSocketIds.forEach((socketId) => {
-        const socket = getSocket(socketId)
+        const socket = editorStore.getSocket(socketId)
         if (inMouseInsideSocket(socket, x, y)) {
           hoverSockets[0] = socket
         }
       })
 
       node.inputSocketIds.forEach((socketId) => {
-        const socket = getSocket(socketId)
+        const socket = editorStore.getSocket(socketId)
         if (inMouseInsideSocket(socket, x, y)) {
           hoverSockets[0] = socket
         }
@@ -152,23 +168,25 @@ const checkHover = (event: MouseEvent) => {
   })
 }
 
-// function to check and track active nodes and sockets
+/**
+ * Track active nodes and sockets
+ */
 const checkActive = () => {
   const { x, y } = mouse.position
 
-  allNodes.forEach((node) => {
+  editorStore.allNodes.forEach((node) => {
     if (isMouseInsideNode(node, x, y)) {
       activeNodes[0] = node
 
       node.outputSocketIds.forEach((socketId) => {
-        const socket = getSocket(socketId)
+        const socket = editorStore.getSocket(socketId)
         if (inMouseInsideSocket(socket, x, y)) {
           activeSockets[0] = socket
         }
       })
 
       node.inputSocketIds.forEach((socketId) => {
-        const socket = getSocket(socketId)
+        const socket = editorStore.getSocket(socketId)
         if (inMouseInsideSocket(socket, x, y)) {
           activeSockets[0] = socket
         }
@@ -177,15 +195,17 @@ const checkActive = () => {
   })
 }
 
-// function to whether handle active socket or active node
+/**
+ * if we have an active socket, then we are creating a new connection
+ * if we have an active node, then we are dragging the node
+ */
 const handleActive = () => {
   if (activeSockets[0]) {
-    console.log('===========> handle active socket ', activeSockets[0])
-    hasNewConnectionActive.value = true
     const connection = useConnection()
-    addConnection(connection)
+    activeConnections[0] = connection
+    editorStore.addConnection(connection)
+    activeConnections[0] = connection
     addSocketToConnection(connection, activeSockets[0])
-    console.log('===========> new connection ', connection)
   } else if (activeNodes[0]) {
     isDragging.value = true
     offsetX.value = mouse.position.x - activeNodes[0].x
@@ -194,18 +214,21 @@ const handleActive = () => {
   }
 }
 
+/**
+ * if the connection is active, and we are hovering over a socket
+ */
 const attachConnection = () => {
-  console.log('==================> attach connection = ', hoverSockets[0])
-  const connection = allConnections[allConnections.length - 1]
-  // connection.outputSocketId = hoverSockets[0].id
-  addSocketToConnection(connection, hoverSockets[0])
-  hasNewConnectionActive.value = false
+  addSocketToConnection(activeConnections[0], hoverSockets[0])
+  activeConnections.pop()
   repaintEditor()
 }
 
+/**
+ * remove the active connection if we click outside a socket
+ */
 const removeDraggedConnection = () => {
-  allConnections.pop()
-  hasNewConnectionActive.value = false
+  editorStore.removeConnection(activeConnections[0].id)
+  activeConnections.pop()
   repaintEditor()
 }
 
@@ -221,7 +244,7 @@ const toggleActiveConnection = () => {
   }
 }
 
-// mouse events all execute some functions
+// ---------------------------------------------------//
 
 const onMouseDown = (event: MouseEvent) => {
   deactivateSelectedNode()

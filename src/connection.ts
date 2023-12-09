@@ -14,11 +14,23 @@ export const useConnection = (
   inputSocketId: string | null = null,
   outputSocketId: string | null = null
 ): ConnectionType => {
-  return reactive<ConnectionType>({
+  const connection: ConnectionType = reactive<ConnectionType>({
     id: nanoid(),
     inputSocketId,
     outputSocketId
   })
+
+  if (inputSocketId) {
+    const socket = useEditorStore().getSocket(inputSocketId)
+    addConnectionToSocket(socket, connection.id)
+  }
+
+  if (outputSocketId) {
+    const socket = useEditorStore().getSocket(outputSocketId)
+    addConnectionToSocket(socket, connection.id)
+  }
+
+  return connection
 }
 
 export const drawConnection = (
@@ -42,16 +54,6 @@ export const drawConnection = (
   let targetX = outputSocket ? outputSocket.x : targetToMouse ? mouse.x : 0
   let targetY = outputSocket ? outputSocket.y : targetToMouse ? mouse.y : 0
 
-  // console.log(
-  //   '------------> Draw Connection ',
-  //   targetToMouse,
-  //   connection.inputSocketId,
-  //   connection.outputSocketId
-  // )
-
-  // console.log(connection.id, connection.inputSocketId, connection.outputSocketId, targetToMouse)
-  // console.log(connection.id, targetToMouse, sourceX, sourceY, targetX, targetY)
-
   // control points
   const cp1X = sourceX + (targetX - sourceX) * (5 / 10)
   const cp2X = sourceX + (targetX - sourceX) * (5 / 10)
@@ -69,25 +71,12 @@ export const drawConnection = (
 
 export const addSocketToConnection = (connection: ConnectionType, socket: SocketType) => {
   const socketId = socket.id
-  console.log(
-    'addSocketToConnection before = ',
-    socket.type,
-    connection.inputSocketId,
-    connection.outputSocketId
-  )
 
   if (socket.type === 'input') {
     connection.inputSocketId = socketId
   } else {
     connection.outputSocketId = socketId
   }
-
-  console.log(
-    'addSocketToConnection after = ',
-    socket.type,
-    connection.inputSocketId,
-    connection.outputSocketId
-  )
 
   // add connection to the socket
   addConnectionToSocket(socket, connection.id)

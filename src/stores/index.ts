@@ -28,6 +28,7 @@ export const useEditorStore = defineStore({
     },
     addConnection(connection: ConnectionType) {
       this.allConnections.push(connection)
+      console.log('addConnection', this.allConnections.length)
     },
 
     getNode(nodeId: string): NodeType {
@@ -42,13 +43,16 @@ export const useEditorStore = defineStore({
     },
 
     removeNode(nodeId: string) {
-      this.allNodes.filter((node) => node.id !== nodeId)
+      this.allNodes = this.allNodes.filter((node) => node.id !== nodeId)
     },
     removeSocket(socketId: string) {
-      this.allSockets.filter((socket) => socket.id !== socketId)
+      this.allSockets = this.allSockets.filter((socket) => socket.id !== socketId)
     },
     removeConnection(connectionId: string) {
-      this.allConnections.filter((connection) => connection.id !== connectionId)
+      this.allConnections = this.allConnections.filter(
+        (connection) => connection.id !== connectionId
+      )
+      console.log('removeConnection ', this.allConnections.length)
     }
   }
 })

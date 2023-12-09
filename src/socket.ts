@@ -2,6 +2,7 @@ import { reactive, type Ref } from 'vue'
 import { useEditorStore } from '@/stores'
 import { nanoid } from 'nanoid'
 import { type NodeType } from '@/node'
+import type { ConnectionType } from '@/connection'
 
 export interface SocketType {
   id: string
@@ -18,6 +19,8 @@ export interface SocketType {
   colorOut: string
   nodeId: string
   connections: string[]
+  func?: Function
+  value: number
 }
 
 /**
@@ -39,7 +42,8 @@ export const useSocket = (newSocket?: Partial<SocketType>): SocketType => {
     colorIn: '#ad89b5',
     colorOut: '#f7aa69',
     stroke: '#24232c',
-    connections: []
+    connections: [],
+    value: 0
   }
 
   return reactive<SocketType>({
@@ -70,7 +74,16 @@ export const inMouseInsideSocket = (socket: SocketType | string, x: number, y: n
   )
 }
 
-export const addConnectionToSocket = (socket: SocketType, connectionId: string) => {
+/**
+ * add a reference to the connection to its socket
+ * @param socket
+ * @param connection
+ */
+export const addConnectionToSocket = (socket: SocketType, connection: ConnectionType | string) => {
+  let connectionId = typeof connection === 'string' ? connection : connection.id
+  connection =
+    typeof connection === 'string' ? useEditorStore().getConnection(connection) : connection
+
   // input socket should have only one connection                                                                                                                                                                                     nection to it
   if (socket.type === 'input') {
     // remove the current connection first
@@ -144,4 +157,15 @@ export const drawSocket = (
   ctx.value.font = '14px Courier New'
   ctx.value.fillStyle = '#e4e4ea'
   ctx.value.fillText(socket.label, labelX, y + node.socketRadius / 2, 500)
+}
+
+/**
+ * Set the function to be executed when any input socket's value change
+ * @param socket
+ * @param func
+ */
+export const setSocketFunction = (socket: SocketType, func: Function) => {
+  if (socket.type === 'output') {
+    socket.func = func
+  }
 }

@@ -17,12 +17,12 @@ export interface NodeType {
   borderRadius: number
   draggable: boolean
   socketRadius: number
-  inputs: number
-  outputs: number
   socketSpacing: number
   headerHeight: number
   inputSocketIds: string[]
   outputSocketIds: string[]
+  inputs: number
+  outputs: number
 }
 
 /**
@@ -43,11 +43,11 @@ const defaultValue: NodeType = {
   borderRadius: 10,
   draggable: true,
   socketRadius: 10,
-  inputs: 0,
-  outputs: 0,
   socketSpacing: 50,
   inputSocketIds: [],
-  outputSocketIds: []
+  outputSocketIds: [],
+  inputs: 0,
+  outputs: 0
 }
 
 /**
@@ -137,6 +137,29 @@ export const drawNode = (ctx: Ref<CanvasRenderingContext2D | null>, node: NodeTy
     const socket = useEditorStore().getSocket(socketId)
     drawSocket(ctx, socket, node)
   }
+
+  //=============== TEMP =======================//
+  // draw the socket values above the nodes
+
+  // for each output socket, draw the value of the socket above the node
+  for (let socketId of node.outputSocketIds) {
+    const socket = useEditorStore().getSocket(socketId)
+    const value = socket.value
+    ctx.value.textAlign = 'center'
+    ctx.value.font = 'bold 14px Courier New'
+    ctx.value.fillStyle = '#c6cbfa'
+    ctx.value.fillText(`${value}`, socket.x + 30, socket.y + 6)
+  }
+
+  // for each input soskcet draw the socket value beside the socket name
+  for (let socketId of node.inputSocketIds) {
+    const socket = useEditorStore().getSocket(socketId)
+    const value = socket.value
+    ctx.value.textAlign = 'left'
+    ctx.value.font = 'bold 14px Courier New'
+    ctx.value.fillStyle = '#c6cbfa'
+    ctx.value.fillText(`${value}`, socket.x + 40, socket.y)
+  }
 }
 
 /**
@@ -157,9 +180,21 @@ export const addNewSocket = (node: NodeType, newSocket: Partial<SocketType>) => 
     node.outputs = node.outputs + 1
   }
 
+  // add the node id to the socket
+  socket.nodeId = node.id
+
   // add socket to the main store
   useEditorStore().addSocket(socket)
 
   // update the node height
   updateNode(node)
+}
+
+export const runSocketFunctions = (node: NodeType) => {
+  for (let socketId of node.outputSocketIds) {
+    const socket = useEditorStore().getSocket(socketId)
+    if (socket.func) {
+      socket.func()
+    }
+  }
 }

@@ -3,6 +3,7 @@ import { useEditorStore } from '@/stores'
 import { nanoid } from 'nanoid'
 import { addConnectionToSocket, removeConnectionFromSocket, type SocketType } from '@/socket'
 import { type MousePosition } from '@/mouse'
+import { runSocketFunctions } from '@/node'
 
 export interface ConnectionType {
   id: string
@@ -16,21 +17,19 @@ export const useConnection = (
 ): ConnectionType => {
   const connection: ConnectionType = reactive<ConnectionType>({
     id: nanoid(),
-    outputSocketId,
-    inputSocketId
+    inputSocketId,
+    outputSocketId
   })
 
   if (inputSocketId) {
     const socket = useEditorStore().getSocket(inputSocketId)
-    addConnectionToSocket(socket, connection.id)
+    addConnectionToSocket(socket, connection)
   }
 
   if (outputSocketId) {
     const socket = useEditorStore().getSocket(outputSocketId)
-    addConnectionToSocket(socket, connection.id)
+    addConnectionToSocket(socket, connection)
   }
-
-  console.log('=======> ', connection)
 
   return connection
 }
@@ -56,10 +55,6 @@ export const drawConnection = (
   let sourceX = outputSocket ? outputSocket.x : targetToMouse ? mouse.x : 0
   let sourceY = outputSocket ? outputSocket.y : targetToMouse ? mouse.y : 0
 
-  console.log('====> draw > target to mouse', targetToMouse)
-  console.log('====> draw > output socket', outputSocket)
-  console.log('====> draw > input socket', inputSocket)
-
   // control points
   const cp1X = sourceX + (targetX - sourceX) * (5 / 10)
   const cp2X = sourceX + (targetX - sourceX) * (5 / 10)
@@ -75,26 +70,43 @@ export const drawConnection = (
   ctx.value.closePath()
 }
 
-export const addSocketToConnection = (connection: ConnectionType, socket: SocketType) => {
-  const socketId = socket.id
+export const addSocketToConnection = (connection: ConnectionType, socket: SocketType | string) => {
+  const socketId = typeof socket === 'string' ? socket : socket.id
+  socket = typeof socket === 'string' ? useEditorStore().getSocket(socket) : socket
 
   if (socket.type === 'input') {
-    connection.inputSocketId = socketId
-  } else {
     connection.outputSocketId = socketId
+  } else {
+    connection.inputSocketId = socketId
   }
 
   // add connection to the socket
-  addConnectionToSocket(socket, connection.id)
+  addConnectionToSocket(socket, connection)
+
+  console.log('===> add socket to connection ', connection)
+
+  // update the socket value
+  if (connection.inputSocketId && connection.outputSocketId) {
+    // get the value of the input socket of the connection and then set the value of the output socket of the connection with this value
+    const inputSocket = useEditorStore().getSocket(connection.inputSocketId)
+    const outputSocket = useEditorStore().getSocket(connection.outputSocketId)
+    outputSocket.value = inputSocket.value
+
+    // get the node of the output socket
+    const node = useEditorStore().getNode(outputSocket.nodeId)
+
+    // run the function of the output socket
+    runSocketFunctions(node)
+  }
 }
 
 export const removeSocketFromConnection = (connection: ConnectionType, socket: SocketType) => {
   const socketId = socket.id
 
   if (socket.type === 'input') {
-    connection.inputSocketId = null
-  } else {
     connection.outputSocketId = null
+  } else {
+    connection.inputSocketId = null
   }
 
   // remove connection from the socket
